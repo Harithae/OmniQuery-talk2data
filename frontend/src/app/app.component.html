@@ -14,15 +14,34 @@
       <div *ngFor="let msg of messages; let i = index; let last = last" class="message-wrapper" [class.user]="msg.sender === 'user'">
         <!-- Show bubble if it has text -->
         <div class="message-bubble" *ngIf="msg.text">
-          <div class="message-actions" *ngIf="msg.sender === 'agent' && msg.hasTable">
-            <button class="viz-btn" (click)="toggleVisualization(i)" [class.active]="msg.showChart" title="Visualize Data">
+          <div class="message-actions" *ngIf="msg.sender === 'agent'">
+            <button class="viz-btn" (click)="toggleDataTable(i)" *ngIf="msg.results" [class.active]="msg.showDataTable" title="View Raw Data">
+              <span class="icon">{{ msg.showDataTable ? '📝' : '🔢' }}</span>
+              {{ msg.showDataTable ? 'Show Text' : 'View Table' }}
+            </button>
+            <button class="viz-btn" (click)="toggleVisualization(i)" [class.active]="msg.showChart" title="Visualize Data" *ngIf="msg.hasTable">
               <span class="icon">{{ msg.showChart ? '📋' : '📊' }}</span>
               {{ msg.showChart ? 'Show Table' : 'Visualize' }}
             </button>
           </div>
 
-          <div class="message-content" *ngIf="!msg.showChart" [innerHTML]="msg.text | markdown"></div>
+          <div class="message-content" *ngIf="!msg.showChart && !msg.showDataTable" [innerHTML]="msg.text | markdown"></div>
           
+          <div class="data-table-container" *ngIf="msg.results && msg.showDataTable">
+            <table class="result-table">
+              <thead>
+                <tr>
+                  <th *ngFor="let col of getColumns(msg.results)">{{ col }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let row of msg.results">
+                  <td *ngFor="let col of getColumns(msg.results)">{{ row[col] }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
           <div class="chart-container" *ngIf="msg.showChart">
             <canvas #chartCanvas [id]="'chart-' + i"></canvas>
             <div *ngIf="!msg.chartData" class="chart-placeholder">

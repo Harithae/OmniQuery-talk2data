@@ -13,7 +13,7 @@ Chart.register(...registerables);
   standalone: true
 })
 export class MarkdownPipe implements PipeTransform {
-  constructor(private sanitizer: DomSanitizer) {}
+  constructor(private sanitizer: DomSanitizer) { }
   transform(value: string): SafeHtml {
     if (!value) return '';
     const html = marked.parse(value) as string;
@@ -40,6 +40,8 @@ interface Message {
   showChart?: boolean;
   chartData?: ChartData;
   chartInstance?: Chart | null;
+  results?: any;
+  showDataTable?: boolean;
 }
 
 @Component({
@@ -78,7 +80,7 @@ export class AppComponent implements AfterViewChecked {
 
   toggleVisualization(index: number) {
     const msg = this.messages[index];
-    
+
     if (msg.showChart) {
       if (msg.chartInstance) {
         msg.chartInstance.destroy();
@@ -90,7 +92,7 @@ export class AppComponent implements AfterViewChecked {
       if (!msg.chartData) {
         this.parseTableForChart(index);
       }
-      
+
       // Only show if we actually have data
       if (msg.chartData && msg.chartData.labels.length > 0) {
         msg.showChart = true;
@@ -104,7 +106,7 @@ export class AppComponent implements AfterViewChecked {
   parseTableForChart(index: number) {
     const msg = this.messages[index];
     const tokens = marked.lexer(msg.text);
-    
+
     // Recursive search for table token
     const findTable = (tokenList: any[]): any => {
       for (const t of tokenList) {
@@ -156,12 +158,12 @@ export class AppComponent implements AfterViewChecked {
       // Fallback: just pick any numeric column if no other exists
       bestDataCol = columnScores.findIndex((s: number) => s > rows.length / 2);
     }
-    
+
     dataColIndex = bestDataCol;
-    
+
     // Pick first non-numeric column as label
     labelColIndex = columnScores.findIndex((s: number) => s === 0);
-    
+
     if (dataColIndex === -1) {
       // Last resort: find any column that has at least one number
       dataColIndex = columnScores.findIndex((s: number) => s > 0);
@@ -200,7 +202,7 @@ export class AppComponent implements AfterViewChecked {
   initChart(index: number) {
     const msg = this.messages[index];
     const canvasRef = this.chartCanvases.toArray().find(c => c.nativeElement.id === `chart-${index}`);
-    
+
     if (canvasRef && msg.chartData) {
       msg.chartInstance = new Chart(canvasRef.nativeElement, {
         type: 'bar',
@@ -284,6 +286,9 @@ export class AppComponent implements AfterViewChecked {
               this.currentStatus = `Searching ${data.tool}...`;
             } else if (data.type === 'tool_end') {
               this.currentStatus = '';
+            } else if (data.type === 'result') {
+              // Store the final result set
+              agentMessage.results = data.content;
             } else if (data.type === 'error') {
               agentMessage.text = `Error: ${data.content}`;
             }
@@ -301,7 +306,7 @@ export class AppComponent implements AfterViewChecked {
         }
         return false;
       };
-      
+
       agentMessage.hasTable = hasTableToken(tokens);
 
     } catch (err) {
@@ -312,6 +317,19 @@ export class AppComponent implements AfterViewChecked {
       this.currentStatus = '';
       this.scrollToBottom();
     }
+  }
+
+  toggleDataTable(index: number) {
+    const msg = this.messages[index];
+    msg.showDataTable = !msg.showDataTable;
+    if (msg.showDataTable) {
+      msg.showChart = false;
+    }
+  }
+
+  getColumns(results: any[]): string[] {
+    if (!results || results.length === 0) return [];
+    return Object.keys(results[0]);
   }
 
   scrollToBottom() {
