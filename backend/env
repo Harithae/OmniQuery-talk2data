@@ -1,7 +1,7 @@
 # Provider Config
 MODEL_PROVIDER=groq
 MODEL_NAME=openai/gpt-oss-120b
-GROQ_API_KEY=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
+GROQ_API_KEY=
 OPENROUTER_API_KEY=
 
 # SQL Server - Inventory
@@ -11,7 +11,7 @@ DATABASE=InventoryDB;
 Trusted_Connection=yes;
 
 # PostgreSQL - Sales
-POSTGRES_DB=SalesDB POSTGRES_USER=postgres POSTGRES_PASSWORD=postgres POSTGRES_HOST=localhost POSTGRES_PORT=5432
+POSTGRES_DB=SalesDB POSTGRES_USER= POSTGRES_PASSWORD= POSTGRES_HOST=localhost POSTGRES_PORT=5432
 
 # MongoDB - Customers
 MONGO_URI=mongodb://localhost:27017/
