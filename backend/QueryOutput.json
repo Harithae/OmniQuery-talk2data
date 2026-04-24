@@ -1,0 +1,641 @@
+{
+    "Mongo_Customer_Address": {
+        "database": "Mongo_Customer_Address",
+        "db_type": "mongo",
+        "resolved_query": "{\"collection\": \"Customer_Address\", \"pipeline\": [{\"$match\": {\"City\": \"Phoenix\"}}, {\"$project\": {\"Customer_ID\": \"$Customer_ID\", \"_id\": 0}}]}",
+        "row_count": 11,
+        "results": [
+            {
+                "Customer_ID": 13
+            },
+            {
+                "Customer_ID": 23
+            },
+            {
+                "Customer_ID": 26
+            },
+            {
+                "Customer_ID": 35
+            },
+            {
+                "Customer_ID": 57
+            },
+            {
+                "Customer_ID": 62
+            },
+            {
+                "Customer_ID": 65
+            },
+            {
+                "Customer_ID": 69
+            },
+            {
+                "Customer_ID": 78
+            },
+            {
+                "Customer_ID": 79
+            },
+            {
+                "Customer_ID": 83
+            }
+        ]
+    },
+    "Mongo_Customer": {
+        "database": "Mongo_Customer",
+        "db_type": "mongo",
+        "resolved_query": "{\"collection\": \"Customer\", \"pipeline\": [{\"$match\": {}}, {\"$project\": {\"Customer_ID\": \"$Customer_ID\", \"First_Name\": \"$First_Name\", \"Last_Name\": \"$Last_Name\", \"_id\": 0}}]}",
+        "row_count": 100,
+        "results": [
+            {
+                "Customer_ID": 1,
+                "First_Name": "Patricia",
+                "Last_Name": "Davis"
+            },
+            {
+                "Customer_ID": 2,
+                "First_Name": "Karen",
+                "Last_Name": "Martin"
+            },
+            {
+                "Customer_ID": 3,
+                "First_Name": "Thomas",
+                "Last_Name": "Jones"
+            },
+            {
+                "Customer_ID": 4,
+                "First_Name": "Sarah",
+                "Last_Name": "Wilson"
+            },
+            {
+                "Customer_ID": 5,
+                "First_Name": "Charles",
+                "Last_Name": "Moore"
+            },
+            {
+                "Customer_ID": 6,
+                "First_Name": "Charles",
+                "Last_Name": "Wilson"
+            },
+            {
+                "Customer_ID": 7,
+                "First_Name": "Robert",
+                "Last_Name": "Smith"
+            },
+            {
+                "Customer_ID": 8,
+                "First_Name": "Susan",
+                "Last_Name": "Smith"
+            },
+            {
+                "Customer_ID": 9,
+                "First_Name": "John",
+                "Last_Name": "Johnson"
+            },
+            {
+                "Customer_ID": 10,
+                "First_Name": "David",
+                "Last_Name": "Davis"
+            },
+            {
+                "Customer_ID": 11,
+                "First_Name": "Susan",
+                "Last_Name": "Davis"
+            },
+            {
+                "Customer_ID": 12,
+                "First_Name": "Jessica",
+                "Last_Name": "Miller"
+            },
+            {
+                "Customer_ID": 13,
+                "First_Name": "Barbara",
+                "Last_Name": "Miller"
+            },
+            {
+                "Customer_ID": 14,
+                "First_Name": "Patricia",
+                "Last_Name": "Jackson"
+            },
+            {
+                "Customer_ID": 15,
+                "First_Name": "Patricia",
+                "Last_Name": "Brown"
+            },
+            {
+                "Customer_ID": 16,
+                "First_Name": "Charles",
+                "Last_Name": "Hernandez"
+            },
+            {
+                "Customer_ID": 17,
+                "First_Name": "Susan",
+                "Last_Name": "Martinez"
+            },
+            {
+                "Customer_ID": 18,
+                "First_Name": "Robert",
+                "Last_Name": "Martin"
+            },
+            {
+                "Customer_ID": 19,
+                "First_Name": "Jessica",
+                "Last_Name": "Miller"
+            },
+            {
+                "Customer_ID": 20,
+                "First_Name": "Karen",
+                "Last_Name": "Moore"
+            },
+            {
+                "Customer_ID": 21,
+                "First_Name": "William",
+                "Last_Name": "Gonzalez"
+            },
+            {
+                "Customer_ID": 22,
+                "First_Name": "Charles",
+                "Last_Name": "Rodriguez"
+            },
+            {
+                "Customer_ID": 23,
+                "First_Name": "Charles",
+                "Last_Name": "Rodriguez"
+            },
+            {
+                "Customer_ID": 24,
+                "First_Name": "Michael",
+                "Last_Name": "Martinez"
+            },
+            {
+                "Customer_ID": 25,
+                "First_Name": "Mary",
+                "Last_Name": "Miller"
+            },
+            {
+                "Customer_ID": 26,
+                "First_Name": "Charles",
+                "Last_Name": "Taylor"
+            },
+            {
+                "Customer_ID": 27,
+                "First_Name": "Patricia",
+                "Last_Name": "Lopez"
+            },
+            {
+                "Customer_ID": 28,
+                "First_Name": "Richard",
+                "Last_Name": "Thomas"
+            },
+            {
+                "Customer_ID": 29,
+                "First_Name": "Mary",
+                "Last_Name": "Anderson"
+            },
+            {
+                "Customer_ID": 30,
+                "First_Name": "James",
+                "Last_Name": "Davis"
+            },
+            {
+                "Customer_ID": 31,
+                "First_Name": "Karen",
+                "Last_Name": "Moore"
+            },
+            {
+                "Customer_ID": 32,
+                "First_Name": "Karen",
+                "Last_Name": "Martinez"
+            },
+            {
+                "Customer_ID": 33,
+                "First_Name": "Jessica",
+                "Last_Name": "Jones"
+            },
+            {
+                "Customer_ID": 34,
+                "First_Name": "David",
+                "Last_Name": "Martin"
+            },
+            {
+                "Customer_ID": 35,
+                "First_Name": "David",
+                "Last_Name": "Brown"
+            },
+            {
+                "Customer_ID": 36,
+                "First_Name": "William",
+                "Last_Name": "Taylor"
+            },
+            {
+                "Customer_ID": 37,
+                "First_Name": "Linda",
+                "Last_Name": "Jones"
+            },
+            {
+                "Customer_ID": 38,
+                "First_Name": "Thomas",
+                "Last_Name": "Rodriguez"
+            },
+            {
+                "Customer_ID": 39,
+                "First_Name": "Michael",
+                "Last_Name": "Lopez"
+            },
+            {
+                "Customer_ID": 40,
+                "First_Name": "Joseph",
+                "Last_Name": "Wilson"
+            },
+            {
+                "Customer_ID": 41,
+                "First_Name": "Charles",
+                "Last_Name": "Rodriguez"
+            },
+            {
+                "Customer_ID": 42,
+                "First_Name": "Thomas",
+                "Last_Name": "Miller"
+            },
+            {
+                "Customer_ID": 43,
+                "First_Name": "Elizabeth",
+                "Last_Name": "Johnson"
+            },
+            {
+                "Customer_ID": 44,
+                "First_Name": "Charles",
+                "Last_Name": "Garcia"
+            },
+            {
+                "Customer_ID": 45,
+                "First_Name": "Mary",
+                "Last_Name": "Wilson"
+            },
+            {
+                "Customer_ID": 46,
+                "First_Name": "Thomas",
+                "Last_Name": "Gonzalez"
+            },
+            {
+                "Customer_ID": 47,
+                "First_Name": "Elizabeth",
+                "Last_Name": "Garcia"
+            },
+            {
+                "Customer_ID": 48,
+                "First_Name": "Charles",
+                "Last_Name": "Thomas"
+            },
+            {
+                "Customer_ID": 49,
+                "First_Name": "Barbara",
+                "Last_Name": "Wilson"
+            },
+            {
+                "Customer_ID": 50,
+                "First_Name": "Robert",
+                "Last_Name": "Jones"
+            },
+            {
+                "Customer_ID": 51,
+                "First_Name": "James",
+                "Last_Name": "Martin"
+            },
+            {
+                "Customer_ID": 52,
+                "First_Name": "David",
+                "Last_Name": "Smith"
+            },
+            {
+                "Customer_ID": 53,
+                "First_Name": "John",
+                "Last_Name": "Jackson"
+            },
+            {
+                "Customer_ID": 54,
+                "First_Name": "Jessica",
+                "Last_Name": "Smith"
+            },
+            {
+                "Customer_ID": 55,
+                "First_Name": "James",
+                "Last_Name": "Thomas"
+            },
+            {
+                "Customer_ID": 56,
+                "First_Name": "Karen",
+                "Last_Name": "Wilson"
+            },
+            {
+                "Customer_ID": 57,
+                "First_Name": "Robert",
+                "Last_Name": "Rodriguez"
+            },
+            {
+                "Customer_ID": 58,
+                "First_Name": "James",
+                "Last_Name": "Williams"
+            },
+            {
+                "Customer_ID": 59,
+                "First_Name": "Susan",
+                "Last_Name": "Anderson"
+            },
+            {
+                "Customer_ID": 60,
+                "First_Name": "Sarah",
+                "Last_Name": "Brown"
+            },
+            {
+                "Customer_ID": 61,
+                "First_Name": "Joseph",
+                "Last_Name": "Rodriguez"
+            },
+            {
+                "Customer_ID": 62,
+                "First_Name": "Michael",
+                "Last_Name": "Wilson"
+            },
+            {
+                "Customer_ID": 63,
+                "First_Name": "Joseph",
+                "Last_Name": "Brown"
+            },
+            {
+                "Customer_ID": 64,
+                "First_Name": "Linda",
+                "Last_Name": "Taylor"
+            },
+            {
+                "Customer_ID": 65,
+                "First_Name": "Michael",
+                "Last_Name": "Johnson"
+            },
+            {
+                "Customer_ID": 66,
+                "First_Name": "Linda",
+                "Last_Name": "Taylor"
+            },
+            {
+                "Customer_ID": 67,
+                "First_Name": "Elizabeth",
+                "Last_Name": "Brown"
+            },
+            {
+                "Customer_ID": 68,
+                "First_Name": "Charles",
+                "Last_Name": "Smith"
+            },
+            {
+                "Customer_ID": 69,
+                "First_Name": "John",
+                "Last_Name": "Williams"
+            },
+            {
+                "Customer_ID": 70,
+                "First_Name": "Elizabeth",
+                "Last_Name": "Jones"
+            },
+            {
+                "Customer_ID": 71,
+                "First_Name": "Patricia",
+                "Last_Name": "Rodriguez"
+            },
+            {
+                "Customer_ID": 72,
+                "First_Name": "Susan",
+                "Last_Name": "Garcia"
+            },
+            {
+                "Customer_ID": 73,
+                "First_Name": "Linda",
+                "Last_Name": "Garcia"
+            },
+            {
+                "Customer_ID": 74,
+                "First_Name": "Susan",
+                "Last_Name": "Williams"
+            },
+            {
+                "Customer_ID": 75,
+                "First_Name": "Michael",
+                "Last_Name": "Thomas"
+            },
+            {
+                "Customer_ID": 76,
+                "First_Name": "Barbara",
+                "Last_Name": "Martin"
+            },
+            {
+                "Customer_ID": 77,
+                "First_Name": "David",
+                "Last_Name": "Moore"
+            },
+            {
+                "Customer_ID": 78,
+                "First_Name": "Jessica",
+                "Last_Name": "Miller"
+            },
+            {
+                "Customer_ID": 79,
+                "First_Name": "Michael",
+                "Last_Name": "Jones"
+            },
+            {
+                "Customer_ID": 80,
+                "First_Name": "Michael",
+                "Last_Name": "Smith"
+            },
+            {
+                "Customer_ID": 81,
+                "First_Name": "Jennifer",
+                "Last_Name": "Smith"
+            },
+            {
+                "Customer_ID": 82,
+                "First_Name": "James",
+                "Last_Name": "Jackson"
+            },
+            {
+                "Customer_ID": 83,
+                "First_Name": "Barbara",
+                "Last_Name": "Garcia"
+            },
+            {
+                "Customer_ID": 84,
+                "First_Name": "Susan",
+                "Last_Name": "Thomas"
+            },
+            {
+                "Customer_ID": 85,
+                "First_Name": "Thomas",
+                "Last_Name": "Brown"
+            },
+            {
+                "Customer_ID": 86,
+                "First_Name": "John",
+                "Last_Name": "Thomas"
+            },
+            {
+                "Customer_ID": 87,
+                "First_Name": "Richard",
+                "Last_Name": "Jackson"
+            },
+            {
+                "Customer_ID": 88,
+                "First_Name": "Thomas",
+                "Last_Name": "Thomas"
+            },
+            {
+                "Customer_ID": 89,
+                "First_Name": "Linda",
+                "Last_Name": "Davis"
+            },
+            {
+                "Customer_ID": 90,
+                "First_Name": "Susan",
+                "Last_Name": "Johnson"
+            },
+            {
+                "Customer_ID": 91,
+                "First_Name": "Sarah",
+                "Last_Name": "Gonzalez"
+            },
+            {
+                "Customer_ID": 92,
+                "First_Name": "Karen",
+                "Last_Name": "Martin"
+            },
+            {
+                "Customer_ID": 93,
+                "First_Name": "Linda",
+                "Last_Name": "Williams"
+            },
+            {
+                "Customer_ID": 94,
+                "First_Name": "Linda",
+                "Last_Name": "Johnson"
+            },
+            {
+                "Customer_ID": 95,
+                "First_Name": "Charles",
+                "Last_Name": "Martinez"
+            },
+            {
+                "Customer_ID": 96,
+                "First_Name": "Richard",
+                "Last_Name": "Martin"
+            },
+            {
+                "Customer_ID": 97,
+                "First_Name": "Thomas",
+                "Last_Name": "Wilson"
+            },
+            {
+                "Customer_ID": 98,
+                "First_Name": "Robert",
+                "Last_Name": "Jones"
+            },
+            {
+                "Customer_ID": 99,
+                "First_Name": "David",
+                "Last_Name": "Smith"
+            },
+            {
+                "Customer_ID": 100,
+                "First_Name": "David",
+                "Last_Name": "Jackson"
+            }
+        ]
+    },
+    "SQL_Inventory_DB": {
+        "database": "SQL_Inventory_DB",
+        "db_type": "sqlserver",
+        "resolved_query": "SELECT Product_ID FROM Product WHERE Product_Name = 'Webcam HD';",
+        "row_count": 25,
+        "results": [
+            {
+                "Product_ID": 1010
+            },
+            {
+                "Product_ID": 1024
+            },
+            {
+                "Product_ID": 1049
+            },
+            {
+                "Product_ID": 1051
+            },
+            {
+                "Product_ID": 1076
+            },
+            {
+                "Product_ID": 1200
+            },
+            {
+                "Product_ID": 1228
+            },
+            {
+                "Product_ID": 1250
+            },
+            {
+                "Product_ID": 1272
+            },
+            {
+                "Product_ID": 1389
+            },
+            {
+                "Product_ID": 1402
+            },
+            {
+                "Product_ID": 1412
+            },
+            {
+                "Product_ID": 1428
+            },
+            {
+                "Product_ID": 1478
+            },
+            {
+                "Product_ID": 1494
+            },
+            {
+                "Product_ID": 1538
+            },
+            {
+                "Product_ID": 1551
+            },
+            {
+                "Product_ID": 1568
+            },
+            {
+                "Product_ID": 1624
+            },
+            {
+                "Product_ID": 1801
+            },
+            {
+                "Product_ID": 1850
+            },
+            {
+                "Product_ID": 1859
+            },
+            {
+                "Product_ID": 1941
+            },
+            {
+                "Product_ID": 1955
+            },
+            {
+                "Product_ID": 1983
+            }
+        ]
+    },
+    "Postgres_Sales_DB": {
+        "database": "Postgres_Sales_DB",
+        "db_type": "postgres",
+        "resolved_query": "SELECT o.customer_id, SUM(o.order_amount) AS total_order_amount FROM \"Order\" o JOIN order_items oi ON o.order_id = oi.order_id WHERE oi.product_id IN (1010, 1024, 1049, 1051, 1076, 1200, 1228, 1250, 1272, 1389, 1402, 1412, 1428, 1478, 1494, 1538, 1551, 1568, 1624, 1801, 1850, 1859, 1941, 1955, 1983) AND o.customer_id IN (SELECT Customer_ID FROM {{Mongo_Customer_Address}}) GROUP BY o.customer_id;",
+        "row_count": 0,
+        "results": []
+    }
+}

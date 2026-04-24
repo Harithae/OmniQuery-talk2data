@@ -1,0 +1,188 @@
+{
+    "collections": {
+        "Customer_Wish_List_Item": {
+            "fields": [
+                {
+                    "name": "_id",
+                    "type": "ObjectId"
+                },
+                {
+                    "name": "Customer_Wish_List_Item_ID",
+                    "type": "int"
+                },
+                {
+                    "name": "Customer_Wish_List_ID",
+                    "type": "int"
+                },
+                {
+                    "name": "Product_ID",
+                    "type": "int"
+                },
+                {
+                    "name": "Product_Price",
+                    "type": "Decimal128"
+                },
+                {
+                    "name": "Created_Date",
+                    "type": "datetime"
+                },
+                {
+                    "name": "Modified_Date",
+                    "type": "NoneType"
+                }
+            ]
+        },
+        "Customer": {
+            "fields": [
+                {
+                    "name": "_id",
+                    "type": "ObjectId"
+                },
+                {
+                    "name": "Customer_ID",
+                    "type": "int"
+                },
+                {
+                    "name": "First_Name",
+                    "type": "str"
+                },
+                {
+                    "name": "Middle_Name",
+                    "type": "NoneType"
+                },
+                {
+                    "name": "Last_Name",
+                    "type": "str"
+                },
+                {
+                    "name": "DOB",
+                    "type": "datetime"
+                },
+                {
+                    "name": "Gender",
+                    "type": "str"
+                },
+                {
+                    "name": "Email_ID",
+                    "type": "str"
+                },
+                {
+                    "name": "Created_Date",
+                    "type": "datetime"
+                },
+                {
+                    "name": "Modified_Date",
+                    "type": "NoneType"
+                }
+            ]
+        },
+        "Customer_Address": {
+            "fields": [
+                {
+                    "name": "_id",
+                    "type": "ObjectId"
+                },
+                {
+                    "name": "Customer_Address_ID",
+                    "type": "int"
+                },
+                {
+                    "name": "Customer_ID",
+                    "type": "int"
+                },
+                {
+                    "name": "City",
+                    "type": "str"
+                },
+                {
+                    "name": "State",
+                    "type": "str"
+                },
+                {
+                    "name": "Country",
+                    "type": "str"
+                },
+                {
+                    "name": "ZIP_Code",
+                    "type": "str"
+                },
+                {
+                    "name": "Primary_Contact_Number",
+                    "type": "str"
+                },
+                {
+                    "name": "Secondary_Contact_Number",
+                    "type": "str"
+                },
+                {
+                    "name": "Created_Date",
+                    "type": "datetime"
+                },
+                {
+                    "name": "Modified_Date",
+                    "type": "NoneType"
+                }
+            ]
+        },
+        "Customer_Wish_List": {
+            "fields": [
+                {
+                    "name": "_id",
+                    "type": "ObjectId"
+                },
+                {
+                    "name": "Customer_Wish_List_ID",
+                    "type": "int"
+                },
+                {
+                    "name": "Wish_List_Name",
+                    "type": "str"
+                },
+                {
+                    "name": "Customer_ID",
+                    "type": "int"
+                },
+                {
+                    "name": "Created_Date",
+                    "type": "datetime"
+                },
+                {
+                    "name": "Modified_Date",
+                    "type": "NoneType"
+                }
+            ]
+        },
+        "Customer_View_History": {
+            "fields": [
+                {
+                    "name": "_id",
+                    "type": "ObjectId"
+                },
+                {
+                    "name": "Customer_View_History_ID",
+                    "type": "int"
+                },
+                {
+                    "name": "Customer_ID",
+                    "type": "int"
+                },
+                {
+                    "name": "Product_ID",
+                    "type": "int"
+                },
+                {
+                    "name": "Product_Price",
+                    "type": "Decimal128"
+                },
+                {
+                    "name": "Created_Date",
+                    "type": "datetime"
+                },
+                {
+                    "name": "Modified_Date",
+                    "type": "NoneType"
+                }
+            ]
+        }
+    }
+}

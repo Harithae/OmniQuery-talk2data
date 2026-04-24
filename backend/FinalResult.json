@@ -1,0 +1,12 @@
+{
+    "join_type": "inner",
+    "conditions": [
+        "Postgres_Sales_DB.customer_id = Mongo_Customer.Customer_ID"
+    ],
+    "final_select": [
+        "CONCAT(Mongo_Customer.First_Name, ' ', Mongo_Customer.Last_Name) AS Customer_Name",
+        "Postgres_Sales_DB.total_order_amount AS Total_Order_Amount"
+    ],
+    "row_count": 0,
+    "results": []
+}
