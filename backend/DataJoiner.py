@@ -170,8 +170,14 @@ def run_join(
     plan = _load_json(plan_file)
     data = _load_json(data_file)
 
-    join_type   = plan.get("join", {}).get("type", "inner").lower()
-    conditions  = plan.get("join", {}).get("conditions", [])
+    join_info = plan.get("join", {})
+    if join_info is None: join_info = {}
+    
+    join_type = join_info.get("type", "inner")
+    if join_type is None: join_type = "inner"
+    join_type = join_type.lower()
+    
+    conditions  = join_info.get("conditions", []) or []
     final_cols  = plan.get("final_select", [])
     user_prompt = plan.get("user_prompt", "")
 
@@ -277,7 +283,7 @@ def run_join(
     # ── Save to file ───────────────────────────────────────────────────────
     with open(output_file, "w", encoding="utf-8") as f:
         json.dump(
-            {"join_type": join_type, "conditions": conditions,
+            {"join_type": join_type if conditions else "none", "conditions": conditions,
              "final_select": final_cols, "row_count": len(projected), "results": projected},
             f, indent=4, default=str
         )

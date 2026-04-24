@@ -66,15 +66,16 @@ def _mongo_db():
 # Placeholder resolution
 # Patterns handled (case-insensitive for IN keyword):
 # ---------------------------------------------------------------------------
-_RE_IN   = re.compile(r'\bIN\s*\(\s*\{?\{([\w.]+)\.(\w+)\}\}?\s*\)', re.IGNORECASE)
-_RE_EQ   = re.compile(r'(=\s*ANY\s*\(|=\s*)\{?\{([\w.]+)\.(\w+)\}\}?(\s*\))?', re.IGNORECASE)
-_RE_BARE = re.compile(r'\{?\{([\w.]+)\.(\w+)\}\}?')
+_RE_IN   = re.compile(r'\bIN\s*\(\s*\{{1,2}([\w.]+)\.(\w+)\}{1,2}\s*\)', re.IGNORECASE)
+_RE_ANY  = re.compile(r'=\s*ANY\s*\(\s*\{{1,2}([\w.]+)\.(\w+)\}{1,2}\s*\)', re.IGNORECASE)
+_RE_EQ   = re.compile(r'=\s*\{{1,2}([\w.]+)\.(\w+)\}{1,2}', re.IGNORECASE)
+_RE_BARE = re.compile(r'\{{1,2}([\w.]+)\.(\w+)\}{1,2}')
 # Strip "AND <expr> IN ({placeholder})" or "AND <expr> = {placeholder}" when upstream is empty
-_RE_AND_IN  = re.compile(r'\s+AND\s+[\w."]+\s+IN\s*\(\s*\{?\{[\w.]+\.\w+\}\}?\s*\)', re.IGNORECASE)
-_RE_AND_EQ  = re.compile(r'\s+AND\s+[\w."]+\s*=\s*(?:ANY\s*\()?\s*\{?\{[\w.]+\.\w+\}\}?\s*\)?', re.IGNORECASE)
+_RE_AND_IN  = re.compile(r'\s+AND\s+[\w."]+\s+IN\s*\(\s*\{{1,2}[\w.]+\.\w+\}{1,2}\s*\)', re.IGNORECASE)
+_RE_AND_EQ  = re.compile(r'\s+AND\s+[\w."]+\s*(?:=\s*(?:ANY\s*\()?\s*\{{1,2}[\w.]+\.\w+\}{1,2}\s*\)?|IN\s*\(\s*\{{1,2}[\w.]+\.\w+\}{1,2}\s*\))', re.IGNORECASE)
 
 
-def _resolve_placeholders(query: str, results_so_far: dict, is_mongo: bool = False) -> str:
+def _resolve_placeholders(query: str, results_so_far: dict) -> str:
     def _values_for(db_key, field):
         rows = results_so_far.get(db_key, [])
         values = []
@@ -89,13 +90,11 @@ def _resolve_placeholders(query: str, results_so_far: dict, is_mongo: bool = Fal
         return values
 
     def _fmt(values):
-        if is_mongo:
-            return values  # Return raw values for JSON serialization
         return [f"'{v}'" if isinstance(v, str) else str(v) for v in values]
 
     def _is_empty_upstream(placeholder_text: str) -> bool:
         """Return True if the placeholder refers to a known-empty upstream result."""
-        m = re.search(r'\{([\w.]+)\.(\w+)\}', placeholder_text)
+        m = re.search(r'\{{1,2}([\w.]+)\.(\w+)\}{1,2}', placeholder_text)
         if not m:
             return False
         db_parts, field = m.group(1), m.group(2)
@@ -127,16 +126,25 @@ def _resolve_placeholders(query: str, results_so_far: dict, is_mongo: bool = Fal
 
     query = _RE_IN.sub(_sub_in, query)
 
-    # Pass 2: = {DB.Field}  or  = ANY({DB.Field})
-    def _sub_eq(m):
-        db_parts = m.group(2)
-        field  = m.group(3)
+    # Pass 2: = ANY({DB.Field})
+    def _sub_any(m):
+        db_parts, field = m.group(1), m.group(2)
         db_key = db_parts.split('.')[0]
-        if db_key not in results_so_far:
-            return m.group(0)
+        if db_key not in results_so_far: return m.group(0)
         values = _values_for(db_key, field)
-        if not values:
-            return "= NULL"
+        if not values: return "= NULL"
+        formatted = _fmt(values)
+        return f"IN ({', '.join(formatted)})"
+
+    query = _RE_ANY.sub(_sub_any, query)
+
+    # Pass 3: = {DB.Field}
+    def _sub_eq(m):
+        db_parts, field = m.group(1), m.group(2)
+        db_key = db_parts.split('.')[0]
+        if db_key not in results_so_far: return m.group(0)
+        values = _values_for(db_key, field)
+        if not values: return "= NULL"
         formatted = _fmt(values)
         if len(values) == 1:
             return f"= {formatted[0]}"
@@ -144,7 +152,7 @@ def _resolve_placeholders(query: str, results_so_far: dict, is_mongo: bool = Fal
 
     query = _RE_EQ.sub(_sub_eq, query)
 
-    # Pass 3: bare {DB.Field}
+    # Pass 4: bare {DB.Field}
     def _sub_bare(m):
         db_parts, field = m.group(1), m.group(2)
         db_key = db_parts.split('.')[0]
@@ -153,8 +161,6 @@ def _resolve_placeholders(query: str, results_so_far: dict, is_mongo: bool = Fal
         values = _values_for(db_key, field)
         if not values:
             return "NULL"
-        if is_mongo:
-            return ", ".join([json.dumps(v) for v in values])
         return ", ".join(_fmt(values))
 
     return _RE_BARE.sub(_sub_bare, query)
@@ -202,17 +208,25 @@ def _run_mongo(query_str: str) -> list:
         rows       = list(collection.aggregate(pipeline))
     elif isinstance(query_obj, list):
         rows = []
+        # Only fallback to searching all collections if the query is a generic pipeline/filter
         for col_name in mdb.list_collection_names():
-            rows = list(mdb[col_name].aggregate(query_obj))
-            if rows:
-                break
-    else:
+            try:
+                rows = list(mdb[col_name].aggregate(query_obj))
+                if rows: break
+            except: continue
+    elif query_obj is not None:
         rows = []
         for col_name in mdb.list_collection_names():
-            tmp = list(mdb[col_name].find(query_obj or {}, {"_id": 0}))
-            if tmp:
-                rows = tmp
-                break
+            try:
+                tmp = list(mdb[col_name].find(query_obj, {"_id": 0}))
+                if tmp:
+                    rows = tmp
+                    break
+            except: continue
+    else:
+        # If parsing failed entirely, do not attempt to run against all collections
+        print(f"        [ERROR] Could not parse Mongo query: {query_str[:100]}...")
+        rows = []
 
     # Remap _id if it came from a $group stage
     pipeline_ref = query_obj.get("pipeline", []) if isinstance(query_obj, dict) else (query_obj if isinstance(query_obj, list) else [])
@@ -243,7 +257,7 @@ def _detect_db_type(db_name: str) -> str:
     name_l = db_name.lower()
     if "mongo" in name_l:
         return "mongo"
-    if "inventory" in name_l or "sql_inventory" in name_l or "mssql" in name_l:
+    if "inventory" in name_l or "sql_inventory" in name_l or "sql" in name_l:
         return "sqlserver"
     return "postgres"
 
@@ -301,22 +315,38 @@ def execute_plan(plan_file: str = "llm_output.json",
             continue
 
         raw_query     = db_queries[db_name]
+        resolved_query = _resolve_placeholders(raw_query, results_so_far)
+        
         db_type = _detect_db_type(db_name)
-        resolved_query = _resolve_placeholders(raw_query, results_so_far, is_mongo=(db_type == "mongo"))
         print(f"[RUN]   {db_name}  ({db_type})")
-        print(f"        Query : {resolved_query[:300]}{'...' if len(resolved_query) > 300 else ''}")
 
-        try:
-            if db_type == "mongo":
-                rows = _run_mongo(resolved_query)
-            elif db_type == "sqlserver":
-                rows = _run_sql_server(resolved_query)
-            else:
-                rows = _run_postgres(resolved_query)
-            print(f"        Result: {len(rows)} row(s)")
-        except Exception as exc:
-            print(f"        ERROR : {exc}\n")
+        # Generic dependency check for all DB types
+        placeholders = _RE_BARE.findall(raw_query)
+        is_empty_dep = False
+        for db_p, field in placeholders:
+            db_k = db_p.split('.')[0]
+            if db_k in results_so_far and not results_so_far[db_k]:
+                print(f"        [INFO] {db_name}: Short-circuiting because upstream '{db_k}' is empty.")
+                is_empty_dep = True
+                break
+        
+        if is_empty_dep:
             rows = []
+            resolved_query = "Short-circuited (empty upstream)"
+        else:
+            resolved_query = _resolve_placeholders(raw_query, results_so_far)
+            print(f"        Query : {resolved_query[:300]}{'...' if len(resolved_query) > 300 else ''}")
+            try:
+                if db_type == "mongo":
+                    rows = _run_mongo(resolved_query)
+                elif db_type == "sqlserver":
+                    rows = _run_sql_server(resolved_query)
+                else:
+                    rows = _run_postgres(resolved_query)
+                print(f"        Result: {len(rows)} row(s)")
+            except Exception as exc:
+                print(f"        ERROR : {exc}\n")
+                rows = []
 
         results_so_far[db_name] = rows
 

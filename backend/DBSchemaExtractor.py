@@ -24,11 +24,11 @@ def extract_schema(connection_string, output_file):
         # Columns
         columns = inspector.get_columns(table_name)
         for col in columns:
+            col_type = str(col["type"]).replace(' COLLATE "SQL_Latin1_General_CP1_CI_AS"', '')
             table_info["columns"].append({
                 "name": col["name"],
-                "type": str(col["type"]),
-                "nullable": col["nullable"],
-                "default": str(col["default"]) if col["default"] else None
+                "type": col_type,
+                "nullable": col["nullable"]
             })
 
         # Primary Keys
