@@ -86,6 +86,7 @@ if __name__ == "__main__":
           * WARNING: You CANNOT join "order_items" and "Product" in a single SQL query because they are in DIFFERENT databases. You must query them separately and link them using placeholders (e.g. SELECT ... FROM Product WHERE Product_ID IN ({{Postgres_Sales_DB.product_id}})).
         - Do not hallucinate columns, tables, or collections. Only use what is explicitly provided in the schema for that specific database name.
         - Do not provide a single colum as a result of a query when the final result is expected to be a table.
+        - Include order by in all the queries, when there is any revenue or count order by that column in descending order. Otherwise order by the primary key in ascending order. 
         Database Schemas:
         {schemas_json}
 

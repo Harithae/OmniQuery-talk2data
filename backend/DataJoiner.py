@@ -196,10 +196,7 @@ def run_join(
     db_results = {name: entry["results"] for name, entry in data.items()}
 
     if not conditions:
-        print("\n  [WARN] No join conditions found in plan. Showing raw results only.")
-        for db_name, rows in db_results.items():
-            _print_table(rows, title=f"Results from: {db_name}")
-        return
+        print("\n  [INFO] No join conditions found in plan. Proceeding with single dataset.")
 
     # ── Perform sequential joins using each LLM condition ─────────────────
     print(f"\n  Join type : {join_type.upper()}")

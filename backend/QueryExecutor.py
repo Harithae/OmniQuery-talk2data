@@ -19,7 +19,7 @@ import psycopg2
 import psycopg2.extras
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(override=True)
 
 # Force UTF-8 output on Windows console
 if sys.stdout.encoding != 'utf-8':

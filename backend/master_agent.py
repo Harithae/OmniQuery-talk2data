@@ -6,7 +6,7 @@ import sys
 from typing import AsyncGenerator
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(override=True)
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

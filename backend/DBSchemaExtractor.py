@@ -100,7 +100,7 @@ def extract_mongo_schema(uri, db_name, output_file):
 
 
 if __name__ == "__main__":
-    load_dotenv()
+    load_dotenv(override=True)
 
     # Ensure DBSchemas directory exists
     os.makedirs("DBSchemas", exist_ok=True)
