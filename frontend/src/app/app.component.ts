@@ -26,9 +26,11 @@ interface ChartData {
   datasets: {
     label: string;
     data: number[];
-    backgroundColor: string[];
-    borderColor: string[];
+    backgroundColor: string[] | string;
+    borderColor: string[] | string;
     borderWidth: number;
+    fill?: boolean;
+    tension?: number;
   }[];
 }
 
@@ -42,6 +44,7 @@ interface Message {
   chartInstance?: Chart | null;
   results?: any;
   showDataTable?: boolean;
+  chartType?: 'bar' | 'line' | 'pie' | 'doughnut' | 'area' | 'horizontalBar';
 }
 
 @Component({
@@ -194,9 +197,54 @@ export class AppComponent implements AfterViewChecked {
         data,
         backgroundColor: labels.map((_: any, i: number) => colors[i % colors.length]),
         borderColor: labels.map((_: any, i: number) => colors[i % colors.length].replace('0.7', '1')),
-        borderWidth: 2
+        borderWidth: 2,
+        fill: false // Will be updated dynamically for area charts
       }]
     };
+  }
+
+  updateChartDataForType(msg: any, chartType: string) {
+    if (!msg.chartData) return;
+    
+    const dataset = msg.chartData.datasets[0];
+    
+    if (chartType === 'area') {
+      dataset.fill = true;
+      dataset.backgroundColor = 'rgba(99, 102, 241, 0.2)';
+      dataset.borderColor = 'rgba(99, 102, 241, 1)';
+      dataset.tension = 0.4; // Smooth curves for area chart
+    } else if (chartType === 'line') {
+      dataset.fill = false;
+      dataset.backgroundColor = 'transparent';
+      dataset.tension = 0.1;
+    } else {
+      // Reset to original colors for bar charts
+      const colors = [
+        'rgba(99, 102, 241, 0.7)',  // Indigo
+        'rgba(14, 165, 233, 0.7)',  // Sky
+        'rgba(168, 85, 247, 0.7)',  // Purple
+        'rgba(236, 72, 153, 0.7)',  // Pink
+        'rgba(249, 115, 22, 0.7)',  // Orange
+        'rgba(34, 197, 94, 0.7)'    // Green
+      ];
+      dataset.backgroundColor = msg.chartData.labels.map((_: any, i: number) => colors[i % colors.length]);
+      dataset.borderColor = msg.chartData.labels.map((_: any, i: number) => colors[i % colors.length].replace('0.7', '1'));
+      dataset.fill = false;
+    }
+  }
+
+  changeChartType(index: number, chartType: 'bar' | 'line' | 'pie' | 'doughnut' | 'area' | 'horizontalBar') {
+    const msg = this.messages[index];
+    if (msg.chartInstance) {
+      msg.chartInstance.destroy();
+      msg.chartInstance = null;
+    }
+    msg.chartType = chartType;
+    
+    // Update chart data for the new type
+    this.updateChartDataForType(msg, chartType);
+    
+    setTimeout(() => this.initChart(index), 0);
   }
 
   initChart(index: number) {
@@ -204,12 +252,23 @@ export class AppComponent implements AfterViewChecked {
     const canvasRef = this.chartCanvases.toArray().find(c => c.nativeElement.id === `chart-${index}`);
 
     if (canvasRef && msg.chartData) {
+      // Handle chart type mapping
+      let chartType = msg.chartType || 'bar';
+      
+      // Map custom types to Chart.js types
+      if (chartType === 'area') {
+        chartType = 'line';
+      } else if (chartType === 'horizontalBar') {
+        chartType = 'bar';
+      }
+
       msg.chartInstance = new Chart(canvasRef.nativeElement, {
-        type: 'bar',
+        type: chartType as any,
         data: msg.chartData!,
         options: {
           responsive: true,
           maintainAspectRatio: false,
+          indexAxis: msg.chartType === 'horizontalBar' ? 'y' : 'x', // Horizontal bar configuration
           plugins: {
             legend: { display: false },
             tooltip: {

@@ -5,50 +5,42 @@
                 {
                     "name": "Location_ID",
                     "type": "INTEGER",
-                    "nullable": false,
-                    "default": null
+                    "nullable": false
                 },
                 {
                     "name": "Area",
-                    "type": "VARCHAR(100) COLLATE \"SQL_Latin1_General_CP1_CI_AS\"",
-                    "nullable": false,
-                    "default": null
+                    "type": "VARCHAR(100)",
+                    "nullable": false
                 },
                 {
                     "name": "City",
-                    "type": "VARCHAR(100) COLLATE \"SQL_Latin1_General_CP1_CI_AS\"",
-                    "nullable": false,
-                    "default": null
+                    "type": "VARCHAR(100)",
+                    "nullable": false
                 },
                 {
                     "name": "State",
-                    "type": "VARCHAR(100) COLLATE \"SQL_Latin1_General_CP1_CI_AS\"",
-                    "nullable": false,
-                    "default": null
+                    "type": "VARCHAR(100)",
+                    "nullable": false
                 },
                 {
                     "name": "Country",
-                    "type": "VARCHAR(100) COLLATE \"SQL_Latin1_General_CP1_CI_AS\"",
-                    "nullable": false,
-                    "default": null
+                    "type": "VARCHAR(100)",
+                    "nullable": false
                 },
                 {
                     "name": "ZipCode",
-                    "type": "VARCHAR(20) COLLATE \"SQL_Latin1_General_CP1_CI_AS\"",
-                    "nullable": false,
-                    "default": null
+                    "type": "VARCHAR(20)",
+                    "nullable": false
                 },
                 {
                     "name": "Created_Date",
                     "type": "DATETIME",
-                    "nullable": false,
-                    "default": "(getdate())"
+                    "nullable": false
                 },
                 {
                     "name": "Modified_Date",
                     "type": "DATETIME",
-                    "nullable": true,
-                    "default": null
+                    "nullable": true
                 }
             ],
             "primary_key": [
@@ -62,44 +54,37 @@
                 {
                     "name": "Product_ID",
                     "type": "INTEGER",
-                    "nullable": false,
-                    "default": null
+                    "nullable": false
                 },
                 {
                     "name": "Product_Name",
-                    "type": "VARCHAR(1000) COLLATE \"SQL_Latin1_General_CP1_CI_AS\"",
-                    "nullable": false,
-                    "default": null
+                    "type": "VARCHAR(1000)",
+                    "nullable": false
                 },
                 {
                     "name": "Product_Price",
                     "type": "DECIMAL(10, 2)",
-                    "nullable": false,
-                    "default": null
+                    "nullable": false
                 },
                 {
                     "name": "Product_Description",
-                    "type": "VARCHAR COLLATE \"SQL_Latin1_General_CP1_CI_AS\"",
-                    "nullable": false,
-                    "default": null
+                    "type": "VARCHAR",
+                    "nullable": false
                 },
                 {
                     "name": "Product_Category_ID",
                     "type": "INTEGER",
-                    "nullable": false,
-                    "default": null
+                    "nullable": false
                 },
                 {
                     "name": "Created_Date",
                     "type": "DATETIME",
-                    "nullable": false,
-                    "default": "(getdate())"
+                    "nullable": false
                 },
                 {
                     "name": "Modified_Date",
                     "type": "DATETIME",
-                    "nullable": true,
-                    "default": null
+                    "nullable": true
                 }
             ],
             "primary_key": [
@@ -123,44 +108,37 @@
                 {
                     "name": "Product_Category_ID",
                     "type": "INTEGER",
-                    "nullable": false,
-                    "default": null
+                    "nullable": false
                 },
                 {
                     "name": "Product_Category_Name",
-                    "type": "VARCHAR(1000) COLLATE \"SQL_Latin1_General_CP1_CI_AS\"",
-                    "nullable": false,
-                    "default": null
+                    "type": "VARCHAR(1000)",
+                    "nullable": false
                 },
                 {
                     "name": "Target_Gender",
-                    "type": "VARCHAR(10) COLLATE \"SQL_Latin1_General_CP1_CI_AS\"",
-                    "nullable": true,
-                    "default": null
+                    "type": "VARCHAR(10)",
+                    "nullable": true
                 },
                 {
                     "name": "Target_Age_Group_From",
                     "type": "INTEGER",
-                    "nullable": true,
-                    "default": null
+                    "nullable": true
                 },
                 {
                     "name": "Target_Age_Group_To",
                     "type": "INTEGER",
-                    "nullable": true,
-                    "default": null
+                    "nullable": true
                 },
                 {
                     "name": "Created_Date",
                     "type": "DATETIME",
-                    "nullable": false,
-                    "default": "(getdate())"
+                    "nullable": false
                 },
                 {
                     "name": "Modified_Date",
                     "type": "DATETIME",
-                    "nullable": true,
-                    "default": null
+                    "nullable": true
                 }
             ],
             "primary_key": [
@@ -174,38 +152,32 @@
                 {
                     "name": "Product_Feature_ID",
                     "type": "INTEGER",
-                    "nullable": false,
-                    "default": null
+                    "nullable": false
                 },
                 {
                     "name": "Product_ID",
                     "type": "INTEGER",
-                    "nullable": false,
-                    "default": null
+                    "nullable": false
                 },
                 {
                     "name": "Product_Feature_Name",
-                    "type": "VARCHAR(1000) COLLATE \"SQL_Latin1_General_CP1_CI_AS\"",
-                    "nullable": false,
-                    "default": null
+                    "type": "VARCHAR(1000)",
+                    "nullable": false
                 },
                 {
                     "name": "Product_Feature_Value",
-                    "type": "VARCHAR(1000) COLLATE \"SQL_Latin1_General_CP1_CI_AS\"",
-                    "nullable": false,
-                    "default": null
+                    "type": "VARCHAR(1000)",
+                    "nullable": false
                 },
                 {
                     "name": "Created_Date",
                     "type": "DATETIME",
-                    "nullable": false,
-                    "default": "(getdate())"
+                    "nullable": false
                 },
                 {
                     "name": "Modified_Date",
                     "type": "DATETIME",
-                    "nullable": true,
-                    "default": null
+                    "nullable": true
                 }
             ],
             "primary_key": [
@@ -229,32 +201,27 @@
                 {
                     "name": "Product_Image_ID",
                     "type": "INTEGER",
-                    "nullable": false,
-                    "default": null
+                    "nullable": false
                 },
                 {
                     "name": "Product_ID",
                     "type": "INTEGER",
-                    "nullable": false,
-                    "default": null
+                    "nullable": false
                 },
                 {
                     "name": "Product_Image",
                     "type": "VARBINARY",
-                    "nullable": true,
-                    "default": null
+                    "nullable": true
                 },
                 {
                     "name": "Created_Date",
                     "type": "DATETIME",
-                    "nullable": false,
-                    "default": "(getdate())"
+                    "nullable": false
                 },
                 {
                     "name": "Modified_Date",
                     "type": "DATETIME",
-                    "nullable": true,
-                    "default": null
+                    "nullable": true
                 }
             ],
             "primary_key": [
@@ -278,56 +245,47 @@
                 {
                     "name": "Store_ID",
                     "type": "INTEGER",
-                    "nullable": false,
-                    "default": null
+                    "nullable": false
                 },
                 {
                     "name": "Location_ID",
                     "type": "INTEGER",
-                    "nullable": false,
-                    "default": null
+                    "nullable": false
                 },
                 {
                     "name": "Store_Name",
-                    "type": "VARCHAR(200) COLLATE \"SQL_Latin1_General_CP1_CI_AS\"",
-                    "nullable": false,
-                    "default": null
+                    "type": "VARCHAR(200)",
+                    "nullable": false
                 },
                 {
                     "name": "Store_Address",
-                    "type": "VARCHAR(1000) COLLATE \"SQL_Latin1_General_CP1_CI_AS\"",
-                    "nullable": false,
-                    "default": null
+                    "type": "VARCHAR(1000)",
+                    "nullable": false
                 },
                 {
                     "name": "Store_Owner_Name",
-                    "type": "VARCHAR(200) COLLATE \"SQL_Latin1_General_CP1_CI_AS\"",
-                    "nullable": false,
-                    "default": null
+                    "type": "VARCHAR(200)",
+                    "nullable": false
                 },
                 {
                     "name": "Store_Owner_Phone",
-                    "type": "VARCHAR(20) COLLATE \"SQL_Latin1_General_CP1_CI_AS\"",
-                    "nullable": false,
-                    "default": null
+                    "type": "VARCHAR(20)",
+                    "nullable": false
                 },
                 {
                     "name": "Store_Owner_Email",
-                    "type": "VARCHAR(100) COLLATE \"SQL_Latin1_General_CP1_CI_AS\"",
-                    "nullable": false,
-                    "default": null
+                    "type": "VARCHAR(100)",
+                    "nullable": false
                 },
                 {
                     "name": "Created_Date",
                     "type": "DATETIME",
-                    "nullable": false,
-                    "default": "(getdate())"
+                    "nullable": false
                 },
                 {
                     "name": "Modified_Date",
                     "type": "DATETIME",
-                    "nullable": true,
-                    "default": null
+                    "nullable": true
                 }
             ],
             "primary_key": [
@@ -351,38 +309,32 @@
                 {
                     "name": "Store_Products_ID",
                     "type": "INTEGER",
-                    "nullable": false,
-                    "default": null
+                    "nullable": false
                 },
                 {
                     "name": "Store_ID",
                     "type": "INTEGER",
-                    "nullable": false,
-                    "default": null
+                    "nullable": false
                 },
                 {
                     "name": "Product_ID",
                     "type": "INTEGER",
-                    "nullable": false,
-                    "default": null
+                    "nullable": false
                 },
                 {
                     "name": "Stock_Quantity",
                     "type": "INTEGER",
-                    "nullable": true,
-                    "default": null
+                    "nullable": true
                 },
                 {
                     "name": "Created_Date",
                     "type": "DATETIME",
-                    "nullable": false,
-                    "default": "(getdate())"
+                    "nullable": false
                 },
                 {
                     "name": "Modified_Date",
                     "type": "DATETIME",
-                    "nullable": true,
-                    "default": null
+                    "nullable": true
                 }
             ],
             "primary_key": [

@@ -23,6 +23,16 @@
               <span class="icon">{{ msg.showChart ? '📋' : '📊' }}</span>
               {{ msg.showChart ? 'Show Table' : 'Visualize' }}
             </button>
+            
+            <!-- Chart Type Selection Buttons -->
+            <div class="chart-type-buttons" *ngIf="msg.showChart">
+              <button class="chart-type-btn" (click)="changeChartType(i, 'bar')" [class.active]="msg.chartType === 'bar' || !msg.chartType">📊 Bar</button>
+              <button class="chart-type-btn" (click)="changeChartType(i, 'horizontalBar')" [class.active]="msg.chartType === 'horizontalBar'">📋 H-Bar</button>
+              <button class="chart-type-btn" (click)="changeChartType(i, 'line')" [class.active]="msg.chartType === 'line'">📈 Line</button>
+              <button class="chart-type-btn" (click)="changeChartType(i, 'area')" [class.active]="msg.chartType === 'area'">🏔️ Area</button>
+              <button class="chart-type-btn" (click)="changeChartType(i, 'pie')" [class.active]="msg.chartType === 'pie'">🥧 Pie</button>
+              <button class="chart-type-btn" (click)="changeChartType(i, 'doughnut')" [class.active]="msg.chartType === 'doughnut'">🍩 Doughnut</button>
+            </div>
           </div>
 
           <div class="message-content" *ngIf="!msg.showChart && !msg.showDataTable" [innerHTML]="msg.text | markdown"></div>
