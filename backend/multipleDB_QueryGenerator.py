@@ -1,6 +1,10 @@
 from groq import Groq
 import os
 import json
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv(override=True)
 
 class SQLGenerator:
     def __init__(self, api_key: str, model: str = "openai/gpt-oss-120b"):
@@ -74,9 +78,11 @@ if __name__ == "__main__":
         - If a query depends on the results of another query, use a placeholder like {{DatabaseName.FieldName}} in the WHERE clause or Mongo filter.
         - Determine the correct "execution_order" array, specifying the sequence of databases to query so dependencies are resolved.
         - CRITICAL JOIN RULE: Every query in the "databases" list MUST explicitly SELECT/project the columns mentioned in "join.conditions". If you join on "Mongo_Customer_DB.Customer_ID = Postgres_Sales_DB.customer_id", then Mongo_Customer_DB MUST project "Customer_ID" and Postgres_Sales_DB MUST select "customer_id". Failure to do this will break the application.
-        - AGGREGATION RULE: If a query uses an aggregate function (e.g., SUM, COUNT, AVG), any field you put in "join.conditions" for that table MUST be present in the SELECT clause and the GROUP BY clause. If you group by `product_id` and lose `order_id`, DO NOT put `order_id` in your `join.conditions`. Rely entirely on the placeholder filter (e.g. `WHERE order_id IN (...)`) and omit the lost column from the join conditions.
+        - AGGREGATION RULE: If a query uses an aggregate function (e.g., SUM, COUNT, AVG), any field you put in "join.conditions" for that table MUST be present in the SELECT clause and the GROUP BY clause. If you want to show Product Names alongside Customer Names, you MUST include `product_id` in the GROUP BY so you can join it with the Product table later.
         - FILTER-ONLY DEPENDENCIES: If a query is ONLY used to fetch IDs to filter another query (e.g., fetching CA addresses to filter sales), and you do not need to attach its columns to the final output, DO NOT include a join condition for it. The placeholder filter (`IN (...)`) is sufficient.
-        - MANDATORY IN-QUERY FILTERING: If a database step (e.g., Step B) follows another step (Step A) in the "execution_order" and they are linked in "join.conditions", you MUST use a placeholder (e.g., {{StepA.Field}}) in Step B's query to filter the results at the source. Do NOT fetch all records and rely solely on the joiner to filter them later.
+        - MANDATORY IN-QUERY FILTERING: If a database step (Step B) follows another step (Step A) in the "execution_order" and they are linked in "join.conditions", you MUST use a placeholder (e.g., {{StepA.Field}}) in Step B's query to filter the results at the source.
+        - CROSS-STEP KEY PRESERVATION: If you split a query into multiple steps (e.g., Step A gets Top Products, Step B gets Customers for those products), Step B MUST explicitly SELECT the key from Step A (e.g., `product_id`) and any other keys needed for the final join. Every table in "join.conditions" MUST have a clear join path to the other tables. If you need to show the Product Name, the aggregation step MUST NOT lose the `product_id`.
+        - JOIN NAME ACCURACY: In the "join.conditions" array, you MUST use the EXACT names you defined in the "databases" list (e.g., use "Postgres_Sales_Step1", not "Postgres_Sales_DB").
         - DATA NORMALIZATION: The database uses State Abbreviations (e.g., "CA", "NY"). If the user provides a full state name like "California", you MUST use the abbreviation "CA" in your query filters.
         - FIELD NAME ACCURACY: MongoDB field names are CASE-SENSITIVE.
           * In the "Customer" collection, the field is "Customer_ID" (Title Case).
@@ -88,7 +94,8 @@ if __name__ == "__main__":
           * SQL DIALECT WARNING: SQL_Inventory_DB is a Microsoft SQL Server database. You MUST use 'TOP' instead of 'LIMIT' (e.g., SELECT TOP 2 Product_ID ...). Postgres_Sales_DB uses LIMIT.
         - Do not hallucinate columns, tables, or collections. Only use what is explicitly provided in the schema for that specific database name.
         - Do not provide a single colum as a result of a query when the final result is expected to be a table.
-        - Include order by in all the queries, when there is any revenue or count order by that column in descending order. Otherwise order by the primary key in ascending order. 
+        - Include order by in all the queries, when there is any revenue or count order by that column in descending order. Otherwise order by the primary key in ascending order.
+        - EXPECTED DETAILS: When combining data from multiple tables (like orders, products, or customers), always retrieve basic descriptive details such as the Customer's First Name, Last Name, Email, and the Product Name whenever possible, even if not explicitly requested.
         Database Schemas:
         {schemas_json}
 
