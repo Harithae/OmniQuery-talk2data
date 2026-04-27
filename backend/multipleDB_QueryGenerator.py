@@ -47,7 +47,7 @@ def load_schemas():
                 db_name = filename.replace("_Schema.json", "")
                 with open(os.path.join(schema_dir, filename), "r") as f:
                     schemas[db_name] = json.load(f)
-    return json.dumps(schemas, indent=2)
+    return json.dumps(schemas, separators=(',', ':'))
 
 if __name__ == "__main__":
     API_KEY = os.getenv("GROQ_API_KEY")
@@ -74,16 +74,18 @@ if __name__ == "__main__":
         - If a query depends on the results of another query, use a placeholder like {{DatabaseName.FieldName}} in the WHERE clause or Mongo filter.
         - Determine the correct "execution_order" array, specifying the sequence of databases to query so dependencies are resolved.
         - CRITICAL JOIN RULE: Every query in the "databases" list MUST explicitly SELECT/project the columns mentioned in "join.conditions". If you join on "Mongo_Customer_DB.Customer_ID = Postgres_Sales_DB.customer_id", then Mongo_Customer_DB MUST project "Customer_ID" and Postgres_Sales_DB MUST select "customer_id". Failure to do this will break the application.
-        - AGGREGATION RULE: If a query uses an aggregate function (e.g., SUM, COUNT, AVG) and is part of a join, you MUST include the join key in the SELECT clause and include a GROUP BY clause for that key. Example: "SELECT customer_id, SUM(amount) FROM ... GROUP BY customer_id".
-        - Do not attempt to "optimize" by removing join keys; they are mandatory for the data stitching logic to function.
+        - AGGREGATION RULE: If a query uses an aggregate function (e.g., SUM, COUNT, AVG), any field you put in "join.conditions" for that table MUST be present in the SELECT clause and the GROUP BY clause. If you group by `product_id` and lose `order_id`, DO NOT put `order_id` in your `join.conditions`. Rely entirely on the placeholder filter (e.g. `WHERE order_id IN (...)`) and omit the lost column from the join conditions.
+        - FILTER-ONLY DEPENDENCIES: If a query is ONLY used to fetch IDs to filter another query (e.g., fetching CA addresses to filter sales), and you do not need to attach its columns to the final output, DO NOT include a join condition for it. The placeholder filter (`IN (...)`) is sufficient.
         - MANDATORY IN-QUERY FILTERING: If a database step (e.g., Step B) follows another step (Step A) in the "execution_order" and they are linked in "join.conditions", you MUST use a placeholder (e.g., {{StepA.Field}}) in Step B's query to filter the results at the source. Do NOT fetch all records and rely solely on the joiner to filter them later.
         - DATA NORMALIZATION: The database uses State Abbreviations (e.g., "CA", "NY"). If the user provides a full state name like "California", you MUST use the abbreviation "CA" in your query filters.
         - FIELD NAME ACCURACY: MongoDB field names are CASE-SENSITIVE.
           * In the "Customer" collection, the field is "Customer_ID" (Title Case).
+        - ALIAS VERIFICATION: If you use a table alias like `p.ColumnName` in the SELECT, WHERE, or ORDER BY clauses, you MUST ensure that the table with alias `p` is explicitly included in the FROM or JOIN clauses. Never select columns from a table you did not join.
         - STRICT SCHEMA INTEGRITY: You MUST cross-reference every table/collection name with the provided "Database Schemas".
           * CASE SENSITIVITY: MongoDB collection names are CASE-SENSITIVE. Use "Customer" (Singular, Title Case), NOT "customers" or "customer".
           * EXAMPLE: "order_items" and "Order" are in Postgres_Sales_DB. "Product" is in SQL_Inventory_DB.
           * WARNING: You CANNOT join "order_items" and "Product" in a single SQL query because they are in DIFFERENT databases. You must query them separately and link them using placeholders (e.g. SELECT ... FROM Product WHERE Product_ID IN ({{Postgres_Sales_DB.product_id}})).
+          * SQL DIALECT WARNING: SQL_Inventory_DB is a Microsoft SQL Server database. You MUST use 'TOP' instead of 'LIMIT' (e.g., SELECT TOP 2 Product_ID ...). Postgres_Sales_DB uses LIMIT.
         - Do not hallucinate columns, tables, or collections. Only use what is explicitly provided in the schema for that specific database name.
         - Do not provide a single colum as a result of a query when the final result is expected to be a table.
         - Include order by in all the queries, when there is any revenue or count order by that column in descending order. Otherwise order by the primary key in ascending order. 
@@ -132,13 +134,45 @@ if __name__ == "__main__":
     #user_prompt = "Find all customers living in 'CA' who have 'Pending' orders for any product in the 'Category 9' category. Show their full names, the specific product name, the order date, and the current order status."
     #user_prompt = "Display all the stored who have Product Category as 'Category 19'"
     import sys
+    import os
+    import json
+    
     user_prompt = sys.argv[1] if len(sys.argv) > 1 else "Get total order amount per customer for customers in Phoenix who bought the product Webcam HD"
 
-    sql_query = sql_generator.generate_sql(system_prompt, user_prompt)
+    # --- Conversational Memory Logic ---
+    history_file = "chat_history.json"
+    history = []
+    
+    if os.path.exists(history_file):
+        try:
+            with open(history_file, "r") as f:
+                history = json.load(f)
+        except Exception:
+            history = []
+
+    # Build the contextualized prompt
+    contextual_prompt = "Conversation History:\n"
+    for turn in history:
+        contextual_prompt += f"User: {turn['user']}\nSystem (Previous Action): {turn.get('action', 'Executed query')}\n\n"
+    
+    contextual_prompt += f"User (Current Query): {user_prompt}\n\n"
+    contextual_prompt += "Based on the conversation history above, generate the appropriate query for the Current Query. If the current query uses terms like 'now', 'this', or 'compare', reference the previous queries for context (e.g. apply the new filter to the same tables as before)."
+
+    print("Generating SQL with context...")
+    sql_query = sql_generator.generate_sql(system_prompt, contextual_prompt)
 
     print("Generated SQL:\n")
     print(sql_query)
 
     with open("llm_output.json", "w") as f:
         f.write(sql_query)
+        
+    # Update History (Keep last 3 interactions to avoid context limit)
+    history.append({"user": user_prompt, "action": "Generated multi-DB query plan"})
+    if len(history) > 3:
+        history.pop(0)
+        
+    with open(history_file, "w") as f:
+        json.dump(history, f, indent=4)
+        
     print("\nSaved generated SQL to llm_output.json")
