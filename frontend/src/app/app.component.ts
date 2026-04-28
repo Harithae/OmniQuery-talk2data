@@ -44,6 +44,7 @@ interface Message {
   chartInstance?: Chart | null;
   results?: any;
   showDataTable?: boolean;
+<<<<<<< HEAD
   chartType?: 'bar' | 'line' | 'doughnut' | 'horizontalBar';
   chartTotal?: number;
   chartZoom?: number;
@@ -51,6 +52,9 @@ interface Message {
   showFullResults?: boolean;
   showTableOptions?: boolean;
   columnWidths?: number[];
+=======
+  insight?: string;
+>>>>>>> main
 }
 
 @Component({
@@ -660,6 +664,8 @@ export class AppComponent implements AfterViewChecked {
             const data = JSON.parse(line);
             if (data.type === 'token') {
               agentMessage.text += data.content;
+            } else if (data.type === 'insight') {
+              agentMessage.insight = (agentMessage.insight || '') + data.content;
             } else if (data.type === 'tool_start') {
               this.currentStatus = `Searching ${data.tool}...`;
             } else if (data.type === 'tool_end') {

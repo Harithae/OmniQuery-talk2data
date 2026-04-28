@@ -134,6 +134,9 @@
             </div>
           </div>
 
+          <div class="insight-container" *ngIf="msg.insight" [innerHTML]="msg.insight | markdown" style="margin-top: 15px; padding: 15px; background-color: rgba(99, 102, 241, 0.05); border-left: 4px solid #6366f1; border-radius: 6px; font-size: 0.95em; color: #334155; line-height: 1.5;"></div>
+
+
           <div class="message-meta" *ngIf="msg.text">{{ msg.timestamp | date:'shortTime' }}</div>
         </div>
       </div>
