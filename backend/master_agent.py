@@ -5,12 +5,22 @@ import subprocess
 import sys
 from typing import AsyncGenerator
 from dotenv import load_dotenv
+from tenacity import retry, stop_after_attempt, wait_exponential
 
 load_dotenv(override=True)
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+@retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=2, max=10))
+def run_script(script_name, args=None):
+    """Runs a python script with retry logic."""
+    cmd = [sys.executable, script_name]
+    if args:
+        cmd.extend(args)
+    logger.info(f"Running script: {' '.join(cmd)}")
+    subprocess.run(cmd, check=True)
 
 async def run_master_agent(user_prompt: str) -> AsyncGenerator[dict, None]:
     """
@@ -23,30 +33,30 @@ async def run_master_agent(user_prompt: str) -> AsyncGenerator[dict, None]:
     try:
         # Step 1: Extract Schema
         yield {"type": "tool_start", "tool": "DBSchemaExtractor", "input": "Extracting database schemas..."}
-        subprocess.run([sys.executable, "DBSchemaExtractor.py"], check=True)
+        run_script("DBSchemaExtractor.py")
         yield {"type": "tool_end", "tool": "DBSchemaExtractor", "status": "success"}
         yield {"type": "token", "content": "✅ Database schemas extracted.\n"}
 
         # Step 2: Generate Query Plan
         yield {"type": "tool_start", "tool": "QueryGenerator", "input": user_prompt}
         # multipleDB_QueryGenerator.py writes to llm_output.json
-        subprocess.run([sys.executable, "multipleDB_QueryGenerator.py", user_prompt], check=True)
+        run_script("multipleDB_QueryGenerator.py", [user_prompt])
         yield {"type": "tool_end", "tool": "QueryGenerator", "status": "success"}
         yield {"type": "token", "content": "✅ Multi-DB query plan generated.\n"}
 
         # Step 3: Execute Queries
         yield {"type": "tool_start", "tool": "QueryExecutor", "input": "Executing cross-database queries..."}
         # QueryExecutor.py reads llm_output.json and writes to QueryOutput.json
-        subprocess.run([sys.executable, "QueryExecutor.py"], check=True)
+        run_script("QueryExecutor.py")
         yield {"type": "tool_end", "tool": "QueryExecutor", "status": "success"}
-        yield {"type": "token", "content": "✅ Queries executed successfully.\n"}
+        yield {"type": "token", "content": "✅ Cross-DB queries executed.\n"}
 
-        # Step 4: Join Results
-        yield {"type": "tool_start", "tool": "DataJoiner", "input": "Merging results..."}
-        # DataJoiner.py reads QueryOutput.json and llm_output.json, writes to FinalResult.json
-        subprocess.run([sys.executable, "DataJoiner.py"], check=True)
+        # Step 4: Join Data
+        yield {"type": "tool_start", "tool": "DataJoiner", "input": "Merging and formatting results..."}
+        # DataJoiner.py reads QueryOutput.json and writes to FinalResult.json
+        run_script("DataJoiner.py")
         yield {"type": "tool_end", "tool": "DataJoiner", "status": "success"}
-        yield {"type": "token", "content": "✅ Data merged and finalized.\n"}
+        yield {"type": "token", "content": "✅ Results merged and formatted.\n"}
 
         # Step 5: Load and Send Final Result
         if os.path.exists("FinalResult.json"):

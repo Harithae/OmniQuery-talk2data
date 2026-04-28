@@ -2,6 +2,7 @@ from groq import Groq
 import os
 import json
 from dotenv import load_dotenv
+from tenacity import retry, wait_exponential, stop_after_attempt
 
 # Load environment variables
 load_dotenv(override=True)
@@ -11,6 +12,7 @@ class SQLGenerator:
         self.client = Groq(api_key=api_key)
         self.model = model
 
+    @retry(wait=wait_exponential(multiplier=1, min=2, max=10), stop=stop_after_attempt(3))
     def generate_sql(self, system_prompt: str, user_prompt: str) -> str:
         """
         Generates SQL query using Groq LLM
@@ -55,6 +57,7 @@ def load_schemas():
 
 if __name__ == "__main__":
     API_KEY = os.getenv("GROQ_API_KEY")
+    MODEL_NAME = os.getenv("MODEL_NAME", "llama-3.1-8b-instant")
     if not API_KEY:
         print("Please set GROQ_API_KEY in your environment or .env file.")
         exit(1)
@@ -96,6 +99,8 @@ if __name__ == "__main__":
         - Do not provide a single colum as a result of a query when the final result is expected to be a table.
         - Include order by in all the queries, when there is any revenue or count order by that column in descending order. Otherwise order by the primary key in ascending order.
         - EXPECTED DETAILS: When combining data from multiple tables (like orders, products, or customers), always retrieve basic descriptive details such as the Customer's First Name, Last Name, Email, and the Product Name whenever possible, even if not explicitly requested.
+        - JSON STRUCTURE: The "databases" field MUST be a simple array of objects. NEVER wrap individual entries in quotes or return them as strings inside the array.
+        - When there is a single query execution only from QueryExecuter.py then just return the result, no need of doing any joins.
         Database Schemas:
         {schemas_json}
 

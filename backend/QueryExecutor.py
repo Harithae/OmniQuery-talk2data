@@ -299,8 +299,28 @@ def execute_plan(plan_file: str = "llm_output.json",
     with open(plan_file, "r") as f:
         plan = json.load(f)
 
-    execution_order = plan.get("execution_order", [d["name"] for d in plan["databases"]])
-    db_queries      = {d["name"]: d["query"] for d in plan["databases"]}
+    db_input = plan.get("databases", [])
+    db_queries = {}
+    
+    if isinstance(db_input, list):
+        for item in db_input:
+            # Handle cases where the LLM stringifies the object inside the list
+            if isinstance(item, str):
+                try:
+                    item = json.loads(item)
+                except:
+                    continue
+            
+            if isinstance(item, dict) and "name" in item:
+                db_queries[item["name"]] = item.get("query", "")
+    elif isinstance(db_input, dict):
+        for k, v in db_input.items():
+            if isinstance(v, dict) and "query" in v:
+                db_queries[k] = v["query"]
+            else:
+                db_queries[k] = v
+
+    execution_order = plan.get("execution_order", list(db_queries.keys()))
 
     results_so_far: dict = {}
     output: dict = {}
