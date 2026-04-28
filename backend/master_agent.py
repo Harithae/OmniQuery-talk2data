@@ -58,7 +58,13 @@ async def run_master_agent(user_prompt: str) -> AsyncGenerator[dict, None]:
         yield {"type": "tool_end", "tool": "DataJoiner", "status": "success"}
         yield {"type": "token", "content": "✅ Results merged and formatted.\n"}
 
-        # Step 5: Load and Send Final Result
+        # Step 5: Generate Business Insights
+        yield {"type": "tool_start", "tool": "BusinessInsights", "input": "Generating business insights..."}
+        subprocess.run([sys.executable, "BusinessInsightsGenerator.py", user_prompt], check=True)
+        yield {"type": "tool_end", "tool": "BusinessInsights", "status": "success"}
+        yield {"type": "token", "content": "✅ Business insights generated.\n"}
+
+        # Step 6: Load and Send Final Result
         if os.path.exists("FinalResult.json"):
             with open("FinalResult.json", "r") as f:
                 final_data = json.load(f)
@@ -91,6 +97,15 @@ async def run_master_agent(user_prompt: str) -> AsyncGenerator[dict, None]:
                 yield {"type": "token", "content": table_md}
             else:
                 yield {"type": "token", "content": "No results found for the given criteria."}
+                
+            # Send business insights to UI
+            insight_text = ""
+            if os.path.exists("insight_output.txt"):
+                with open("insight_output.txt", "r", encoding='utf-8') as f:
+                    insight_text = f.read()
+
+            if insight_text:
+                yield {"type": "insight", "content": f"\n### Business Insights\n{insight_text}\n"}
         else:
             yield {"type": "error", "content": "FinalResult.json was not generated."}
 
@@ -105,5 +120,5 @@ if __name__ == "__main__":
     import asyncio
     async def test():
         async for chunk in run_master_agent("Get total order amount per customer"):
-            print(chunk)
+            print(repr(chunk))
     asyncio.run(test())
