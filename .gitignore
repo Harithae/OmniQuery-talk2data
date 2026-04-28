@@ -28,3 +28,12 @@ logs/
 .idea/
 .DS_Store
 
+# Backend generated files (temporary/intermediate)
+backend/FinalResult.json
+backend/QueryOutput.json
+backend/llm_output.json
+
+# Backend test files
+test_db_connections.py
+test_query_gen.py
+

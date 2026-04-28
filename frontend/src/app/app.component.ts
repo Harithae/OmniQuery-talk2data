@@ -44,7 +44,13 @@ interface Message {
   chartInstance?: Chart | null;
   results?: any;
   showDataTable?: boolean;
-  chartType?: 'bar' | 'line' | 'pie' | 'doughnut' | 'area' | 'horizontalBar';
+  chartType?: 'bar' | 'line' | 'doughnut' | 'horizontalBar';
+  chartTotal?: number;
+  chartZoom?: number;
+  hasMoreRows?: boolean;
+  showFullResults?: boolean;
+  showTableOptions?: boolean;
+  columnWidths?: number[];
 }
 
 @Component({
@@ -67,6 +73,13 @@ export class AppComponent implements AfterViewChecked {
   isLoading = false;
   currentStatus = '';
 
+  // Column resizing properties
+  isResizing = false;
+  resizingMessageIndex = -1;
+  resizingColumnIndex = -1;
+  startX = 0;
+  startWidths: number[] = [];
+
   @ViewChildren('chartCanvas') chartCanvases!: QueryList<ElementRef<HTMLCanvasElement>>;
 
   constructor(private chatService: ChatService, private sanitizer: DomSanitizer) { }
@@ -79,30 +92,133 @@ export class AppComponent implements AfterViewChecked {
     });
   }
 
+  // Column resizing methods
+  initializeColumnWidths(messageIndex: number) {
+    const msg = this.messages[messageIndex];
+    if (!msg.results || msg.columnWidths) return;
+
+    const columns = this.getColumns(msg.results);
+    const tableWidth = 800; // Base table width
+    const defaultWidth = tableWidth / columns.length;
+    
+    msg.columnWidths = columns.map(() => defaultWidth);
+  }
+
+  onResizeStart(messageIndex: number, columnIndex: number, event: MouseEvent) {
+    event.preventDefault();
+    this.isResizing = true;
+    this.resizingMessageIndex = messageIndex;
+    this.resizingColumnIndex = columnIndex;
+    this.startX = event.clientX;
+    
+    const msg = this.messages[messageIndex];
+    this.startWidths = [...(msg.columnWidths || [])];
+    
+    document.addEventListener('mousemove', this.onResize.bind(this));
+    document.addEventListener('mouseup', this.onResizeEnd.bind(this));
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  }
+
+  onResize(event: MouseEvent) {
+    if (!this.isResizing) return;
+    
+    const msg = this.messages[this.resizingMessageIndex];
+    if (!msg.columnWidths) return;
+
+    const deltaX = event.clientX - this.startX;
+    const minWidth = 80; // Minimum column width
+    
+    // Update current column width
+    const newWidth = Math.max(minWidth, this.startWidths[this.resizingColumnIndex] + deltaX);
+    msg.columnWidths[this.resizingColumnIndex] = newWidth;
+    
+    // Adjust next column width to maintain total width
+    if (this.resizingColumnIndex < msg.columnWidths.length - 1) {
+      const nextColumnIndex = this.resizingColumnIndex + 1;
+      const widthDiff = newWidth - this.startWidths[this.resizingColumnIndex];
+      const newNextWidth = Math.max(minWidth, this.startWidths[nextColumnIndex] - widthDiff);
+      msg.columnWidths[nextColumnIndex] = newNextWidth;
+    }
+  }
+
+  onResizeEnd() {
+    this.isResizing = false;
+    this.resizingMessageIndex = -1;
+    this.resizingColumnIndex = -1;
+    document.removeEventListener('mousemove', this.onResize.bind(this));
+    document.removeEventListener('mouseup', this.onResizeEnd.bind(this));
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+  }
+
+  getColumnWidth(messageIndex: number, columnIndex: number): string {
+    const msg = this.messages[messageIndex];
+    if (!msg.columnWidths) {
+      this.initializeColumnWidths(messageIndex);
+    }
+    return msg.columnWidths ? `${msg.columnWidths[columnIndex]}px` : 'auto';
+  }
 
 
-  toggleVisualization(index: number) {
+
+  showTableView(index: number) {
     const msg = this.messages[index];
+    
+    // Destroy chart if it exists
+    if (msg.chartInstance) {
+      msg.chartInstance.destroy();
+      msg.chartInstance = null;
+    }
+    
+    msg.showChart = false;
+    msg.showFullResults = false;
+  }
 
-    if (msg.showChart) {
-      if (msg.chartInstance) {
-        msg.chartInstance.destroy();
-        msg.chartInstance = null;
-      }
-      msg.showChart = false;
+  toggleTableOptions(index: number) {
+    const msg = this.messages[index];
+    msg.showTableOptions = !msg.showTableOptions;
+    msg.showChart = false;
+    msg.showFullResults = false;
+    
+    // Destroy chart instance when switching to table view
+    if (msg.chartInstance) {
+      msg.chartInstance.destroy();
+      msg.chartInstance = null;
+    }
+  }
+
+  showFullResults(index: number) {
+    const msg = this.messages[index];
+    
+    // Destroy chart if it exists
+    if (msg.chartInstance) {
+      msg.chartInstance.destroy();
+      msg.chartInstance = null;
+    }
+    
+    msg.showChart = false;
+    msg.showFullResults = true;
+    msg.showTableOptions = false;
+  }
+
+  showChartView(index: number) {
+    const msg = this.messages[index];
+    
+    // Reset table options when switching to chart
+    msg.showTableOptions = false;
+    msg.showFullResults = false;
+    
+    // Try to parse if not already parsed
+    if (!msg.chartData) {
+      this.parseTableForChart(index);
+    }
+
+    // Only show if we actually have data
+    if (msg.chartData && msg.chartData.labels.length > 0) {
+      msg.showChart = true;
     } else {
-      // Try to parse if not already parsed
-      if (!msg.chartData) {
-        this.parseTableForChart(index);
-      }
-
-      // Only show if we actually have data
-      if (msg.chartData && msg.chartData.labels.length > 0) {
-        msg.showChart = true;
-      } else {
-        console.warn('Could not generate chart data for this table');
-        // Maybe show a temporary toast or just keep the table visible
-      }
+      console.warn('Could not generate chart data for this table');
     }
   }
 
@@ -181,13 +297,26 @@ export class AppComponent implements AfterViewChecked {
       return parseFloat(cleanVal) || 0;
     });
 
+    // Calculate total for center display
+    const total = data.reduce((sum: number, value: number) => sum + value, 0);
+    msg.chartTotal = total;
+
     const colors = [
-      'rgba(99, 102, 241, 0.7)',  // Indigo
-      'rgba(14, 165, 233, 0.7)',  // Sky
-      'rgba(168, 85, 247, 0.7)',  // Purple
-      'rgba(236, 72, 153, 0.7)',  // Pink
-      'rgba(249, 115, 22, 0.7)',  // Orange
-      'rgba(34, 197, 94, 0.7)'    // Green
+      'rgba(99, 102, 241, 0.7)',   // 1. Indigo
+      'rgba(14, 165, 233, 0.7)',   // 2. Sky Blue
+      'rgba(168, 85, 247, 0.7)',   // 3. Purple
+      'rgba(236, 72, 153, 0.7)',   // 4. Pink
+      'rgba(249, 115, 22, 0.7)',   // 5. Orange
+      'rgba(34, 197, 94, 0.7)',    // 6. Green
+      'rgba(239, 68, 68, 0.7)',    // 7. Red
+      'rgba(234, 179, 8, 0.7)',    // 8. Yellow
+      'rgba(20, 184, 166, 0.7)',   // 9. Teal
+      'rgba(217, 70, 239, 0.7)',   // 10. Magenta
+      'rgba(251, 146, 60, 0.7)',   // 11. Light Orange
+      'rgba(59, 130, 246, 0.7)',   // 12. Blue
+      'rgba(139, 92, 246, 0.7)',   // 13. Violet
+      'rgba(244, 63, 94, 0.7)',    // 14. Rose
+      'rgba(16, 185, 129, 0.7)'    // 15. Emerald
     ];
 
     msg.chartData = {
@@ -208,24 +337,28 @@ export class AppComponent implements AfterViewChecked {
     
     const dataset = msg.chartData.datasets[0];
     
-    if (chartType === 'area') {
-      dataset.fill = true;
-      dataset.backgroundColor = 'rgba(99, 102, 241, 0.2)';
-      dataset.borderColor = 'rgba(99, 102, 241, 1)';
-      dataset.tension = 0.4; // Smooth curves for area chart
-    } else if (chartType === 'line') {
+    if (chartType === 'line') {
       dataset.fill = false;
       dataset.backgroundColor = 'transparent';
       dataset.tension = 0.1;
     } else {
       // Reset to original colors for bar charts
       const colors = [
-        'rgba(99, 102, 241, 0.7)',  // Indigo
-        'rgba(14, 165, 233, 0.7)',  // Sky
-        'rgba(168, 85, 247, 0.7)',  // Purple
-        'rgba(236, 72, 153, 0.7)',  // Pink
-        'rgba(249, 115, 22, 0.7)',  // Orange
-        'rgba(34, 197, 94, 0.7)'    // Green
+        'rgba(99, 102, 241, 0.7)',   // 1. Indigo
+        'rgba(14, 165, 233, 0.7)',   // 2. Sky Blue
+        'rgba(168, 85, 247, 0.7)',   // 3. Purple
+        'rgba(236, 72, 153, 0.7)',   // 4. Pink
+        'rgba(249, 115, 22, 0.7)',   // 5. Orange
+        'rgba(34, 197, 94, 0.7)',    // 6. Green
+        'rgba(239, 68, 68, 0.7)',    // 7. Red
+        'rgba(234, 179, 8, 0.7)',    // 8. Yellow
+        'rgba(20, 184, 166, 0.7)',   // 9. Teal
+        'rgba(217, 70, 239, 0.7)',   // 10. Magenta
+        'rgba(251, 146, 60, 0.7)',   // 11. Light Orange
+        'rgba(59, 130, 246, 0.7)',   // 12. Blue
+        'rgba(139, 92, 246, 0.7)',   // 13. Violet
+        'rgba(244, 63, 94, 0.7)',    // 14. Rose
+        'rgba(16, 185, 129, 0.7)'    // 15. Emerald
       ];
       dataset.backgroundColor = msg.chartData.labels.map((_: any, i: number) => colors[i % colors.length]);
       dataset.borderColor = msg.chartData.labels.map((_: any, i: number) => colors[i % colors.length].replace('0.7', '1'));
@@ -233,44 +366,214 @@ export class AppComponent implements AfterViewChecked {
     }
   }
 
-  changeChartType(index: number, chartType: 'bar' | 'line' | 'pie' | 'doughnut' | 'area' | 'horizontalBar') {
+  changeChartType(index: number, chartType: 'bar' | 'line' | 'doughnut' | 'horizontalBar') {
     const msg = this.messages[index];
+    
+    // Destroy existing chart instance
     if (msg.chartInstance) {
       msg.chartInstance.destroy();
       msg.chartInstance = null;
     }
+    
     msg.chartType = chartType;
     
     // Update chart data for the new type
     this.updateChartDataForType(msg, chartType);
     
-    setTimeout(() => this.initChart(index), 0);
+    // Use a longer timeout to ensure Angular has updated the view
+    setTimeout(() => {
+      this.initChart(index);
+    }, 50);
+  }
+
+  zoomChart(index: number, direction: 'in' | 'out') {
+    const msg = this.messages[index];
+    if (!msg.chartZoom) msg.chartZoom = 1;
+    
+    if (direction === 'in') {
+      msg.chartZoom = Math.min(msg.chartZoom + 0.2, 3); // Max 3x zoom
+    } else {
+      msg.chartZoom = Math.max(msg.chartZoom - 0.2, 0.5); // Min 0.5x zoom
+    }
+    
+    // Recreate chart with new zoom
+    if (msg.chartInstance) {
+      msg.chartInstance.destroy();
+      msg.chartInstance = null;
+    }
+    setTimeout(() => this.initChart(index), 50);
+  }
+
+  resetZoom(index: number) {
+    const msg = this.messages[index];
+    msg.chartZoom = 1;
+    
+    if (msg.chartInstance) {
+      msg.chartInstance.destroy();
+      msg.chartInstance = null;
+    }
+    setTimeout(() => this.initChart(index), 50);
   }
 
   initChart(index: number) {
     const msg = this.messages[index];
-    const canvasRef = this.chartCanvases.toArray().find(c => c.nativeElement.id === `chart-${index}`);
+    
+    // Find the canvas element by ID
+    const canvasElement = document.getElementById(`chart-${index}`) as HTMLCanvasElement;
+    
+    if (!canvasElement) {
+      console.warn(`Canvas element not found for chart-${index}`);
+      return;
+    }
 
-    if (canvasRef && msg.chartData) {
-      // Handle chart type mapping
-      let chartType = msg.chartType || 'bar';
-      
-      // Map custom types to Chart.js types
-      if (chartType === 'area') {
-        chartType = 'line';
-      } else if (chartType === 'horizontalBar') {
-        chartType = 'bar';
+    if (!msg.chartData) {
+      console.warn('No chart data available');
+      return;
+    }
+
+    // Handle chart type mapping
+    let chartType = msg.chartType || 'bar';
+    
+    // Map custom types to Chart.js types
+    if (chartType === 'horizontalBar') {
+      chartType = 'bar';
+    }
+
+    // Set default zoom if not set
+    if (!msg.chartZoom) msg.chartZoom = 1;
+
+    // Dynamic cutout based on text length
+    let cutoutPercentage = '70%';
+    if (msg.chartTotal !== undefined) {
+      const textLength = msg.chartTotal.toString().length;
+      if (textLength > 8) {
+        cutoutPercentage = '75%'; // Larger hole for long numbers
+      } else if (textLength > 6) {
+        cutoutPercentage = '72%';
       }
+    }
 
-      msg.chartInstance = new Chart(canvasRef.nativeElement, {
+    // Center text plugin for doughnut charts
+    const centerTextPlugin = {
+      id: 'centerText',
+      beforeDraw(chart: any) {
+        if (msg.chartType === 'doughnut' && msg.chartTotal !== undefined) {
+          const { ctx, chartArea } = chart;
+          if (!chartArea) return;
+          
+          const centerX = (chartArea.left + chartArea.right) / 2;
+          const centerY = (chartArea.top + chartArea.bottom) / 2;
+          
+          ctx.save();
+          const text = msg.chartTotal.toString();
+          
+          let fontSize = 40;
+          if (text.length > 8) {
+            fontSize = 24;
+          } else if (text.length > 6) {
+            fontSize = 30;
+          } else if (text.length > 4) {
+            fontSize = 36;
+          }
+          
+          ctx.font = `bold ${fontSize}px sans-serif`;
+          ctx.fillStyle = '#1f2937';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(text, centerX, centerY);
+          ctx.restore();
+        }
+      }
+    };
+
+    // External labels plugin for doughnut charts
+    const externalLabelsPlugin = {
+      id: 'externalLabels',
+      afterDraw(chart: any) {
+        if (msg.chartType !== 'doughnut') return;
+        
+        const { ctx, chartArea, data } = chart;
+        const centerX = (chartArea.left + chartArea.right) / 2;
+        const centerY = (chartArea.top + chartArea.bottom) / 2;
+        const radius = Math.min(chartArea.right - centerX, chartArea.bottom - centerY);
+        
+        ctx.save();
+        
+        const meta = chart.getDatasetMeta(0);
+        const total = data.datasets[0].data.reduce((a: number, b: number) => a + b, 0);
+        
+        meta.data.forEach((arc: any, index: number) => {
+          const label = data.labels[index];
+          const value = data.datasets[0].data[index];
+          const percentage = ((value / total) * 100).toFixed(2);
+          
+          // Calculate angle for this segment
+          const angle = (arc.startAngle + arc.endAngle) / 2;
+          
+          // Point on the arc edge
+          const x1 = centerX + Math.cos(angle) * (radius * 0.85);
+          const y1 = centerY + Math.sin(angle) * (radius * 0.85);
+          
+          // Extended point for the line
+          const lineLength = 30;
+          const x2 = centerX + Math.cos(angle) * (radius * 0.85 + lineLength);
+          const y2 = centerY + Math.sin(angle) * (radius * 0.85 + lineLength);
+          
+          // Horizontal line extension
+          const horizontalLength = 40;
+          const x3 = x2 + (Math.cos(angle) > 0 ? horizontalLength : -horizontalLength);
+          const y3 = y2;
+          
+          // Draw line from arc to label
+          ctx.beginPath();
+          ctx.moveTo(x1, y1);
+          ctx.lineTo(x2, y2);
+          ctx.lineTo(x3, y3);
+          ctx.strokeStyle = '#64748b';
+          ctx.lineWidth = 1;
+          ctx.stroke();
+          
+          // Draw label text
+          const text = `${label} - ${percentage}%`;
+          ctx.font = '12px sans-serif';
+          ctx.fillStyle = '#1e293b';
+          ctx.textBaseline = 'middle';
+          
+          if (Math.cos(angle) > 0) {
+            ctx.textAlign = 'left';
+            ctx.fillText(text, x3 + 5, y3);
+          } else {
+            ctx.textAlign = 'right';
+            ctx.fillText(text, x3 - 5, y3);
+          }
+        });
+        
+        ctx.restore();
+      }
+    };
+
+    try {
+      msg.chartInstance = new Chart(canvasElement, {
         type: chartType as any,
         data: msg.chartData!,
+        plugins: msg.chartType === 'doughnut' ? [centerTextPlugin, externalLabelsPlugin] : [],
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          indexAxis: msg.chartType === 'horizontalBar' ? 'y' : 'x', // Horizontal bar configuration
+          indexAxis: msg.chartType === 'horizontalBar' ? 'y' : 'x',
+          cutout: msg.chartType === 'doughnut' ? cutoutPercentage : undefined,
+          layout: {
+            padding: {
+              top: 20,
+              bottom: 20,
+              left: 20,
+              right: 20
+            }
+          },
           plugins: {
-            legend: { display: false },
+            legend: { 
+              display: false
+            },
             tooltip: {
               backgroundColor: 'rgba(255, 255, 255, 0.9)',
               titleColor: '#1e293b',
@@ -283,17 +586,29 @@ export class AppComponent implements AfterViewChecked {
           },
           scales: {
             y: {
+              display: msg.chartType !== 'doughnut',
               beginAtZero: true,
               grid: { color: 'rgba(0, 0, 0, 0.05)' },
               ticks: { color: '#64748b', font: { size: 10 } }
             },
             x: {
+              display: msg.chartType !== 'doughnut',
               grid: { display: false },
               ticks: { color: '#64748b', font: { size: 10 } }
             }
           }
         }
       });
+
+      // Apply zoom scaling
+      if (msg.chartZoom && msg.chartZoom !== 1) {
+        canvasElement.style.transform = `scale(${msg.chartZoom})`;
+        canvasElement.style.transformOrigin = 'center center';
+      } else {
+        canvasElement.style.transform = 'scale(1)';
+      }
+    } catch (error) {
+      console.error('Error creating chart:', error);
     }
   }
 
@@ -314,7 +629,11 @@ export class AppComponent implements AfterViewChecked {
     const agentMessage: Message = {
       text: '',
       sender: 'agent',
-      timestamp: new Date()
+      timestamp: new Date(),
+      showChart: false,
+      showFullResults: false,
+      showTableOptions: false,
+      chartType: 'bar'
     };
     this.messages.push(agentMessage);
 
@@ -348,6 +667,8 @@ export class AppComponent implements AfterViewChecked {
             } else if (data.type === 'result') {
               // Store the final result set
               agentMessage.results = data.content;
+              // Check if there are more than 10 rows
+              agentMessage.hasMoreRows = data.content && data.content.length > 10;
             } else if (data.type === 'error') {
               agentMessage.text = `Error: ${data.content}`;
             }
@@ -355,6 +676,9 @@ export class AppComponent implements AfterViewChecked {
           } catch (e) { }
         }
       }
+
+      // Clean up the agent message text: remove status messages and "Final Results"
+      agentMessage.text = this.cleanAgentMessage(agentMessage.text);
 
       // After streaming is complete, check for tables more accurately
       const tokens = marked.lexer(agentMessage.text);
@@ -378,17 +702,46 @@ export class AppComponent implements AfterViewChecked {
     }
   }
 
-  toggleDataTable(index: number) {
-    const msg = this.messages[index];
-    msg.showDataTable = !msg.showDataTable;
-    if (msg.showDataTable) {
-      msg.showChart = false;
-    }
+  cleanAgentMessage(text: string): string {
+    // Remove status messages (✅ Database schemas extracted, etc.)
+    text = text.replace(/✅[^\n]*\n?/g, '');
+    
+    // Replace "Final Results (X rows)" with "Results Summary"
+    text = text.replace(/Final Results\s*\(\d+\s*rows?\)/gi, 'Results Summary');
+    
+    // Remove extra blank lines
+    text = text.replace(/\n\n+/g, '\n\n');
+    
+    return text.trim();
   }
+
+
 
   getColumns(results: any[]): string[] {
     if (!results || results.length === 0) return [];
-    return Object.keys(results[0]);
+    const columns = Object.keys(results[0]);
+    // Remove underscores, capitalize first letter of each word
+    return columns.map(col => 
+      col
+        .replace(/_/g, ' ')
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join(' ')
+    );
+  }
+
+  getColumnKey(results: any[], displayName: string): string {
+    if (!results || results.length === 0) return displayName;
+    const columns = Object.keys(results[0]);
+    // Find the original column name that matches the display name
+    return columns.find(col => {
+      const formatted = col
+        .replace(/_/g, ' ')
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join(' ');
+      return formatted === displayName;
+    }) || displayName;
   }
 
   scrollToBottom() {

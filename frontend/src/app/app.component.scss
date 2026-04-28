@@ -45,6 +45,7 @@ header {
 
       span {
         background: linear-gradient(135deg, #0ea5e9 0%, #6366f1 50%, #a855f7 100%);
+        background-clip: text;
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         font-weight: 900;
@@ -166,6 +167,265 @@ header {
     z-index: 10;
 
     .viz-btn {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(8px);
+      border: 2px solid rgba(99, 102, 241, 0.2);
+      border-radius: 22px;
+      padding: 0.45rem 1rem;
+      font-size: 0.9rem;
+      font-weight: 800;
+      color: #6366f1;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 6px 15px rgba(99, 102, 241, 0.08);
+
+      &:hover {
+        transform: translateY(-2px);
+        background: white;
+        box-shadow: 0 8px 20px rgba(99, 102, 241, 0.15);
+        border-color: rgba(99, 102, 241, 0.3);
+      }
+
+      &.active {
+        background: #6366f1;
+        color: white;
+        border-color: #6366f1;
+        box-shadow: 0 6px 15px rgba(99, 102, 241, 0.25);
+      }
+
+      .icon { font-size: 1rem; }
+    }
+
+    .table-button-group {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .table-type-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.25rem;
+      align-items: center;
+
+      .chart-type-btn {
+        background: rgba(255, 255, 255, 0.9);
+        backdrop-filter: blur(8px);
+        border: 1px solid rgba(0, 0, 0, 0.05);
+        border-radius: 15px;
+        padding: 0.3rem 0.6rem;
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: #64748b;
+        cursor: pointer;
+        transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+        white-space: nowrap;
+        flex: 0 0 auto;
+
+        &:hover {
+          transform: translateY(-1px);
+          background: white;
+          box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+          color: #475569;
+        }
+
+        &.active {
+          background: #6366f1;
+          color: white;
+          border-color: #6366f1;
+          box-shadow: 0 4px 10px rgba(99, 102, 241, 0.2);
+        }
+      }
+    }
+
+    .chart-type-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.25rem;
+      margin-top: 0.75rem;
+      margin-bottom: 0.5rem;
+      max-width: 100%;
+      justify-content: flex-end;
+
+      .chart-type-btn {
+        background: rgba(255, 255, 255, 0.9);
+        backdrop-filter: blur(8px);
+        border: 1px solid rgba(0, 0, 0, 0.05);
+        border-radius: 15px;
+        padding: 0.3rem 0.6rem;
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: #64748b;
+        cursor: pointer;
+        transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+        white-space: nowrap;
+        flex: 0 0 auto;
+
+        &:hover {
+          transform: translateY(-1px);
+          background: white;
+          box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+          color: #475569;
+        }
+
+        &.active {
+          background: #6366f1;
+          color: white;
+          border-color: #6366f1;
+          box-shadow: 0 4px 10px rgba(99, 102, 241, 0.2);
+        }
+
+        &.view-full-results-btn {
+          color: #0ea5e9;
+          border-color: #0ea5e9;
+
+          &:hover {
+            background: #f0f9ff;
+            color: #0369a1;
+            border-color: #0369a1;
+          }
+
+          &.active {
+            background: #0ea5e9;
+            color: white;
+            border-color: #0ea5e9;
+            box-shadow: 0 4px 10px rgba(14, 165, 233, 0.2);
+          }
+        }
+      }
+    }
+
+    .chart-zoom-controls {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+      margin-bottom: 0.5rem;
+      justify-content: center;
+
+      .zoom-btn {
+        position: relative;
+        background: rgba(255, 255, 255, 0.9);
+        backdrop-filter: blur(8px);
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        border-radius: 50%;
+        width: 30px;
+        height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #64748b;
+        cursor: pointer;
+        transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+        padding: 0;
+
+        svg {
+          display: block;
+        }
+
+        .zoom-label {
+          position: absolute;
+          bottom: -28px;
+          left: 50%;
+          transform: translateX(-50%);
+          background: rgba(0, 0, 0, 0.8);
+          color: white;
+          padding: 4px 8px;
+          border-radius: 4px;
+          font-size: 11px;
+          font-weight: 500;
+          white-space: nowrap;
+          opacity: 0;
+          pointer-events: none;
+          transition: opacity 0.2s ease;
+          z-index: 100;
+        }
+
+        &:hover {
+          transform: translateY(-2px);
+          background: white;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+          color: #475569;
+          border-color: rgba(0, 0, 0, 0.2);
+
+          .zoom-label {
+            opacity: 1;
+          }
+        }
+
+        &:active {
+          transform: translateY(0);
+          box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+        }
+
+        &.reset {
+          background: #f1f5f9;
+          color: #64748b;
+          
+          &:hover {
+            background: #e2e8f0;
+            color: #475569;
+          }
+        }
+      }
+    }
+
+    .button-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+
+      .sub-buttons {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+
+        .sub-btn {
+          background: rgba(255, 255, 255, 0.85);
+          backdrop-filter: blur(8px);
+          border: 1px solid rgba(0, 0, 0, 0.08);
+          border-radius: 15px;
+          padding: 0.25rem 0.6rem;
+          font-size: 0.65rem;
+          font-weight: 600;
+          color: #64748b;
+          display: flex;
+          align-items: center;
+          gap: 0.3rem;
+          cursor: pointer;
+          transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+          box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+          white-space: nowrap;
+
+          .icon {
+            font-size: 0.75rem;
+          }
+
+          &:hover {
+            transform: translateY(-1px);
+            background: white;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+            color: #475569;
+          }
+
+          &.active {
+            background: #6366f1;
+            color: white;
+            border-color: #6366f1;
+            box-shadow: 0 4px 10px rgba(99, 102, 241, 0.2);
+          }
+        }
+      }
+    }
+
+    .view-full-btn {
       background: rgba(255, 255, 255, 0.9);
       backdrop-filter: blur(8px);
       border: 1px solid rgba(0, 0, 0, 0.05);
@@ -195,52 +455,12 @@ header {
 
       .icon { font-size: 0.85rem; }
     }
-
-    .chart-type-buttons {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.25rem;
-      margin-top: 0.75rem;
-      margin-bottom: 0.5rem;
-      max-width: 100%;
-      justify-content: flex-end;
-
-      .chart-type-btn {
-        background: rgba(255, 255, 255, 0.9);
-        backdrop-filter: blur(8px);
-        border: 1px solid rgba(0, 0, 0, 0.05);
-        border-radius: 15px;
-        padding: 0.25rem 0.5rem;
-        font-size: 0.6rem;
-        font-weight: 600;
-        color: #64748b;
-        cursor: pointer;
-        transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
-        white-space: nowrap;
-        flex: 0 0 auto;
-
-        &:hover {
-          transform: translateY(-1px);
-          background: white;
-          box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
-          color: #475569;
-        }
-
-        &.active {
-          background: #6366f1;
-          color: white;
-          border-color: #6366f1;
-          box-shadow: 0 4px 10px rgba(99, 102, 241, 0.2);
-        }
-      }
-    }
   }
 
   .chart-container {
     width: 100%;
-    min-width: 300px;
-    height: 240px;
+    min-width: 500px;
+    height: 400px;
     padding: 0.85rem 0.5rem;
     background: rgba(255, 255, 255, 0.4);
     border-radius: 12px;
@@ -251,6 +471,44 @@ header {
     align-items: center;
     justify-content: center;
     position: relative;
+    overflow: hidden;
+
+    .chart-wrapper {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      
+      canvas {
+        max-width: none !important;
+        max-height: none !important;
+        transform-origin: center center;
+      }
+    }
+
+    .chart-center-total {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 80px;
+      height: 80px;
+      font-size: 24px;
+      font-weight: bold;
+      color: #1e293b;
+      pointer-events: none;
+      z-index: 10;
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 50%;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      
+      /* Perfect centering - using line-height method */
+      text-align: center;
+      line-height: 80px;
+      font-family: 'Arial', sans-serif;
+    }
 
     .chart-placeholder {
       display: flex;
@@ -350,41 +608,114 @@ header {
   .data-table-container {
     width: 100%;
     margin: 1rem 0;
-    overflow-x: auto;
+    overflow: hidden;
     border-radius: 12px;
-    border: 1px solid rgba(0, 0, 0, 0.05);
+    border: 3px solid #0ea5e9;
     background: white;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+    box-shadow: 0 4px 15px rgba(14, 165, 233, 0.15);
+
+    .results-heading {
+      margin: 0;
+      padding: 1rem 1.2rem 0.5rem 1.2rem;
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #0f172a;
+      border-bottom: 2px solid #e2e8f0;
+      text-align: center;
+    }
 
     .result-table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 0.85rem;
+      font-size: 0.8rem;
+      background: white;
+      table-layout: fixed;
 
       th, td {
-        padding: 0.75rem 1rem;
+        padding: 0.85rem 1.2rem;
         text-align: left;
-        border-bottom: 1px solid #f1f5f9;
+        border: 1px solid #e2e8f0;
+        position: relative;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
 
-      th {
-        background: #f8fafc;
-        color: #64748b;
-        font-weight: 700;
-        text-transform: uppercase;
-        font-size: 0.7rem;
+      thead th {
+        background: #0ea5e9 !important;
+        color: white !important;
+        font-weight: 800;
+        text-transform: capitalize;
+        font-size: 1.1rem;
         letter-spacing: 0.05em;
         position: sticky;
         top: 0;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        user-select: none;
+        text-align: center;
+
+        .resize-handle {
+          position: absolute;
+          top: 0;
+          right: 0;
+          width: 4px;
+          height: 100%;
+          background: transparent;
+          cursor: col-resize;
+          z-index: 10;
+          
+          &:hover {
+            background: rgba(255, 255, 255, 0.3);
+          }
+          
+          &:active {
+            background: rgba(255, 255, 255, 0.5);
+          }
+        }
       }
 
-      tr:hover {
-        background: #f8fafc;
+      tbody {
+        background: white;
       }
 
-      td {
+      tbody tr {
+        background: white !important;
+      }
+
+      tbody td {
         color: #334155;
-        white-space: nowrap;
+        font-size: 0.9rem;
+        font-weight: 500;
+        background: white !important;
+      }
+
+      tbody tr:hover {
+        background: #f0f9ff !important;
+      }
+
+      tbody tr:hover td {
+        background: #f0f9ff !important;
+      }
+
+      tr:last-child td {
+        border-bottom: 1px solid #e2e8f0;
+      }
+    }
+
+    .table-note {
+      padding: 0.75rem 1.2rem;
+      background: #f0f9ff;
+      border-top: 1px solid #e2e8f0;
+      font-size: 0.9rem;
+      color: #0369a1;
+      
+      p {
+        margin: 0;
+        
+        strong {
+          font-weight: 700;
+          color: #0ea5e9;
+        }
       }
     }
   }
