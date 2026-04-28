@@ -34,6 +34,63 @@ async def run_master_agent(user_prompt: str) -> AsyncGenerator[dict, None]:
         yield {"type": "tool_end", "tool": "QueryGenerator", "status": "success"}
         yield {"type": "token", "content": "✅ Multi-DB query plan generated.\n"}
 
+        # --- DATA GUARDRAILS ---
+        if os.path.exists("llm_output.json"):
+            with open("llm_output.json", "r") as f:
+                plan = json.load(f)
+            
+            if "error" in plan:
+                msg = f"Security Warning: {plan['error']}"
+                logger.warning(msg)
+                yield {"type": "error", "content": msg}
+                return
+
+            if "databases" not in plan:
+                msg = "Error: Invalid query plan generated."
+                logger.warning(msg)
+                yield {"type": "error", "content": msg}
+                return
+
+            import re
+            forbidden_sql_pattern = re.compile(r'\b(INSERT|UPDATE|DELETE|DROP|ALTER|TRUNCATE|EXEC|EXECUTE|GRANT|REVOKE|REPLACE|CREATE)\b', re.IGNORECASE)
+            schema_tables = ["INFORMATION_SCHEMA", "PG_CATALOG", "PG_TABLES", "SYS.TABLES", "SYS.COLUMNS"]
+
+            for db in plan.get("databases", []):
+                db_name = db.get("name", "").lower()
+                query = str(db.get("query", "")).strip()
+                
+                if "mongo" not in db_name:
+                    upper_query = query.upper()
+                    
+                    # 1. Enforce SELECT only
+                    if not (upper_query.startswith("SELECT") or upper_query.startswith("WITH")):
+                        msg = "Security Warning: Only SELECT queries are permitted. Modifying data is forbidden."
+                        logger.warning(msg)
+                        yield {"type": "error", "content": msg}
+                        return
+                        
+                    # 2. Forbid any DML/DDL keywords
+                    if forbidden_sql_pattern.search(query):
+                        msg = "Security Warning: Disallowed SQL operations detected. Only SELECT queries are permitted."
+                        logger.warning(msg)
+                        yield {"type": "error", "content": msg}
+                        return
+                    
+                    # 3. Forbid schema extraction
+                    for st in schema_tables:
+                        if st in upper_query:
+                            msg = "Security Warning: DB schema extraction is not allowed."
+                            logger.warning(msg)
+                            yield {"type": "error", "content": msg}
+                            return
+                else:
+                    # MongoDB guardrails: Prevent write operations like $out, $merge
+                    if "$out" in query or "$merge" in query:
+                        msg = "Security Warning: Data modification operations ($out, $merge) are not allowed in MongoDB queries."
+                        logger.warning(msg)
+                        yield {"type": "error", "content": msg}
+                        return
+
         # Step 3: Execute Queries
         yield {"type": "tool_start", "tool": "QueryExecutor", "input": "Executing cross-database queries..."}
         # QueryExecutor.py reads llm_output.json and writes to QueryOutput.json
