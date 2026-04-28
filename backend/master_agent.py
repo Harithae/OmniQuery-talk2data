@@ -156,12 +156,9 @@ async def run_master_agent(user_prompt: str) -> AsyncGenerator[dict, None]:
         else:
             yield {"type": "error", "content": "FinalResult.json was not generated."}
 
-    except subprocess.CalledProcessError as e:
-        logger.error(f"Script execution failed: {e}")
-        yield {"type": "error", "content": f"Pipeline failed at script execution: {e}"}
     except Exception as e:
         logger.error(f"Master Agent Error: {e}")
-        yield {"type": "error", "content": str(e)}
+        yield {"type": "error", "content": "An unexpected error occurred while processing your request. Please try again later."}
 
 if __name__ == "__main__":
     import asyncio

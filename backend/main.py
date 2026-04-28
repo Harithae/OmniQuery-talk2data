@@ -40,7 +40,7 @@ async def chat(req: ChatRequest):
                 yield json.dumps(chunk) + "\n"
         except Exception as e:
             print(f"Streaming error: {e}")
-            yield json.dumps({"type": "error", "content": str(e)}) + "\n"
+            yield json.dumps({"type": "error", "content": "An unexpected error occurred while processing your request. Please try again later."}) + "\n"
 
     return StreamingResponse(event_generator(), media_type="application/x-ndjson")
 
