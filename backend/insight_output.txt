@@ -1,2 +1,0 @@
-AI Insight: All 90+ current orders are pending, tying up approximately $3.5 M in revenue, with the top 5 pending orders (IDs 60, 10, 179, 49, 54) alone accounting for about 17% of that total.  
-Actionable Item: Prioritize fulfillment of the five highest‑value pending orders and allocate additional shipping resources to reduce the overall pending backlog, aiming to clear at least 25% of pending revenue within the next two weeks.
