@@ -5,14 +5,50 @@ import subprocess
 import sys
 import time
 from typing import AsyncGenerator
+from groq import Groq
 from dotenv import load_dotenv
 from retry_utils import run_command_with_heartbeat
 
 load_dotenv(override=True)
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.WARNING)
 logger = logging.getLogger(__name__)
+
+def is_retail_domain(user_prompt: str) -> bool:
+    """
+    Checks if the user prompt is related to the retail domain.
+    """
+    api_key = os.getenv("GROQ_API_KEY")
+    if not api_key:
+        logger.warning("GROQ_API_KEY not found. Skipping domain check.")
+        return True
+    
+    try:
+        client = Groq(api_key=api_key)
+        model = os.getenv("MODEL_NAME", "llama-3.1-8b-instant")
+        
+        system_prompt = (
+            "You are a domain validator. Determine if the user's query is related to RETAIL "
+            "(Customers, Orders, Sales, Products, Inventory). "
+            "Respond with 'YES' if it is related, and 'NO' otherwise. Return ONLY 'YES' or 'NO'."
+        )
+        
+        response = client.chat.completions.create(
+            model=model,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ],
+            temperature=0,
+            max_tokens=5
+        )
+        
+        decision = response.choices[0].message.content.strip().upper()
+        return "YES" in decision
+    except Exception as e:
+        logger.error(f"Domain check error: {e}")
+        return True # Fallback to proceed if check fails
 
 async def run_master_agent(user_prompt: str) -> AsyncGenerator[dict, None]:
     """
@@ -23,6 +59,14 @@ async def run_master_agent(user_prompt: str) -> AsyncGenerator[dict, None]:
     4. DataJoiner.py
     """
     try:
+        # Step 0: Domain Guardrail
+        if not is_retail_domain(user_prompt):
+            yield {
+                "type": "token", 
+                "content": "I'm sorry, but I can only help with queries related to the retail domain (Customers, Sales, and Order information). Please try asking something else!"
+            }
+            return
+
         # Step 1: Extract Schema
         yield {"type": "tool_start", "tool": "DBSchemaExtractor", "input": "Extracting database schemas..."}
         async for hb in run_command_with_heartbeat([sys.executable, "DBSchemaExtractor.py"], "DBSchemaExtractor"):
@@ -126,10 +170,10 @@ async def run_master_agent(user_prompt: str) -> AsyncGenerator[dict, None]:
                 "content": results
             }
 
-            # Generate a small summary and markdown table for chat
-            yield {"type": "token", "content": f"\n### Final Results ({row_count} rows)\n"}
-            
             if results:
+                # Generate a small summary and markdown table for chat
+                yield {"type": "token", "content": f"\n### Final Results ({row_count} rows)\n"}
+
                 cols = list(results[0].keys())
                 header = "| " + " | ".join(cols) + " |"
                 sep = "| " + " | ".join(["---"] * len(cols)) + " |"
@@ -143,7 +187,7 @@ async def run_master_agent(user_prompt: str) -> AsyncGenerator[dict, None]:
                 
                 yield {"type": "token", "content": table_md}
             else:
-                yield {"type": "token", "content": "No results found for the given criteria."}
+                yield {"type": "token", "content": "I couldn't find any data matching your request. Please try a different query."}
                 
             # Send business insights to UI
             insight_text = ""

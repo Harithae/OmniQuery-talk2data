@@ -156,45 +156,16 @@ if __name__ == "__main__":
     #user_prompt = "Find all customers living in 'CA' who have 'Pending' orders for any product in the 'Category 9' category. Show their full names, the specific product name, the order date, and the current order status."
     #user_prompt = "Display all the stored who have Product Category as 'Category 19'"
     import sys
-    import os
-    import json
     
     user_prompt = sys.argv[1] if len(sys.argv) > 1 else "Get total order amount per customer for customers in Phoenix who bought the product Webcam HD"
 
-    # --- Conversational Memory Logic ---
-    history_file = "chat_history.json"
-    history = []
-    
-    if os.path.exists(history_file):
-        try:
-            with open(history_file, "r") as f:
-                history = json.load(f)
-        except Exception:
-            history = []
-
-    # Build the contextualized prompt
-    contextual_prompt = "Conversation History:\n"
-    for turn in history:
-        contextual_prompt += f"User: {turn['user']}\nSystem (Previous Action): {turn.get('action', 'Executed query')}\n\n"
-    
-    contextual_prompt += f"User (Current Query): {user_prompt}\n\n"
-    contextual_prompt += "Based on the conversation history above, generate the appropriate query for the Current Query. If the current query uses terms like 'now', 'this', or 'compare', reference the previous queries for context (e.g. apply the new filter to the same tables as before)."
-
-    print("Generating SQL with context...")
-    sql_query = sql_generator.generate_sql(system_prompt, contextual_prompt)
+    print("Generating SQL ...")
+    sql_query = sql_generator.generate_sql(system_prompt, user_prompt)
 
     print("Generated SQL:\n")
     print(sql_query)
 
     with open("llm_output.json", "w") as f:
         f.write(sql_query)
-        
-    # Update History (Keep last 3 interactions to avoid context limit)
-    history.append({"user": user_prompt, "action": "Generated multi-DB query plan"})
-    if len(history) > 3:
-        history.pop(0)
-        
-    with open(history_file, "w") as f:
-        json.dump(history, f, indent=4)
         
     print("\nSaved generated SQL to llm_output.json")

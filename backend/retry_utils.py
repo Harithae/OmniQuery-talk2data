@@ -26,7 +26,7 @@ def retry_decorator(retries=3, delay=2, backoff=2, exceptions=(Exception,), time
                         if attempt == retries:
                             logger.error(f"Async attempt {attempt} failed for {func.__name__}: {e}")
                             raise
-                        logger.warning(f"Async attempt {attempt} failed for {func.__name__}. Retrying in {_delay}s... Error: {e}")
+                        logger.debug(f"Async attempt {attempt} failed for {func.__name__}. Retrying in {_delay}s... Error: {e}")
                         await asyncio.sleep(_delay)
                         _delay *= backoff
             return async_wrapper
@@ -42,7 +42,7 @@ def retry_decorator(retries=3, delay=2, backoff=2, exceptions=(Exception,), time
                         if attempt == retries:
                             logger.error(f"Sync attempt {attempt} failed for {func.__name__}: {e}")
                             raise
-                        logger.warning(f"Sync attempt {attempt} failed for {func.__name__}. Retrying in {_delay}s... Error: {e}")
+                        logger.debug(f"Sync attempt {attempt} failed for {func.__name__}. Retrying in {_delay}s... Error: {e}")
                         time.sleep(_delay)
                         _delay *= backoff
             return sync_wrapper
@@ -56,7 +56,7 @@ async def run_command_with_heartbeat(cmd, step_name, retries=3, delay=2, backoff
     _delay = delay
     for attempt in range(1, retries + 1):
         try:
-            logger.info(f"[{step_name}] Attempt {attempt}/{retries} (Timeout: {timeout}s)")
+            logger.debug(f"[{step_name}] Attempt {attempt}/{retries} (Timeout: {timeout}s)")
             
             # Start the process
             process = await asyncio.create_subprocess_exec(
