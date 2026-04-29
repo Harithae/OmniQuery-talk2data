@@ -18,6 +18,7 @@ import pyodbc
 import psycopg2
 import psycopg2.extras
 from dotenv import load_dotenv
+from retry_utils import retry_decorator
 
 load_dotenv(override=True)
 
@@ -170,6 +171,7 @@ def _resolve_placeholders(query: str, results_so_far: dict) -> str:
 # ---------------------------------------------------------------------------
 # Executors per DB type
 # ---------------------------------------------------------------------------
+@retry_decorator(retries=3, delay=2)
 def _run_postgres(query: str) -> list:
     conn = _pg_conn()
     try:
@@ -180,6 +182,7 @@ def _run_postgres(query: str) -> list:
         conn.close()
 
 
+@retry_decorator(retries=3, delay=2)
 def _run_sql_server(query: str) -> list:
     conn = _sql_server_conn()
     try:
@@ -191,6 +194,7 @@ def _run_sql_server(query: str) -> list:
         conn.close()
 
 
+@retry_decorator(retries=3, delay=2)
 def _run_mongo(query_str: str) -> list:
     mdb = _mongo_db()
 

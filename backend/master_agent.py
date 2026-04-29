@@ -3,24 +3,16 @@ import json
 import logging
 import subprocess
 import sys
+import time
 from typing import AsyncGenerator
 from dotenv import load_dotenv
-from tenacity import retry, stop_after_attempt, wait_exponential
+from retry_utils import run_command_with_heartbeat
 
 load_dotenv(override=True)
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-@retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=2, max=10))
-def run_script(script_name, args=None):
-    """Runs a python script with retry logic."""
-    cmd = [sys.executable, script_name]
-    if args:
-        cmd.extend(args)
-    logger.info(f"Running script: {' '.join(cmd)}")
-    subprocess.run(cmd, check=True)
 
 async def run_master_agent(user_prompt: str) -> AsyncGenerator[dict, None]:
     """
@@ -33,16 +25,15 @@ async def run_master_agent(user_prompt: str) -> AsyncGenerator[dict, None]:
     try:
         # Step 1: Extract Schema
         yield {"type": "tool_start", "tool": "DBSchemaExtractor", "input": "Extracting database schemas..."}
-        run_script("DBSchemaExtractor.py")
+        async for hb in run_command_with_heartbeat([sys.executable, "DBSchemaExtractor.py"], "DBSchemaExtractor"):
+            yield hb
         yield {"type": "tool_end", "tool": "DBSchemaExtractor", "status": "success"}
-        yield {"type": "token", "content": "✅ Database schemas extracted.\n"}
 
         # Step 2: Generate Query Plan
         yield {"type": "tool_start", "tool": "QueryGenerator", "input": user_prompt}
-        # multipleDB_QueryGenerator.py writes to llm_output.json
-        run_script("multipleDB_QueryGenerator.py", [user_prompt])
+        async for hb in run_command_with_heartbeat([sys.executable, "multipleDB_QueryGenerator.py", user_prompt], "QueryGenerator"):
+            yield hb
         yield {"type": "tool_end", "tool": "QueryGenerator", "status": "success"}
-        yield {"type": "token", "content": "✅ Multi-DB query plan generated.\n"}
 
         # --- DATA GUARDRAILS ---
         if os.path.exists("llm_output.json"):
@@ -103,21 +94,20 @@ async def run_master_agent(user_prompt: str) -> AsyncGenerator[dict, None]:
 
         # Step 3: Execute Queries
         yield {"type": "tool_start", "tool": "QueryExecutor", "input": "Executing cross-database queries..."}
-        # QueryExecutor.py reads llm_output.json and writes to QueryOutput.json
-        run_script("QueryExecutor.py")
+        async for hb in run_command_with_heartbeat([sys.executable, "QueryExecutor.py"], "QueryExecutor"):
+            yield hb
         yield {"type": "tool_end", "tool": "QueryExecutor", "status": "success"}
-        yield {"type": "token", "content": "✅ Cross-DB queries executed.\n"}
 
-        # Step 4: Join Data
-        yield {"type": "tool_start", "tool": "DataJoiner", "input": "Merging and formatting results..."}
-        # DataJoiner.py reads QueryOutput.json and writes to FinalResult.json
-        run_script("DataJoiner.py")
+        # Step 4: Join Results
+        yield {"type": "tool_start", "tool": "DataJoiner", "input": "Merging results..."}
+        async for hb in run_command_with_heartbeat([sys.executable, "DataJoiner.py"], "DataJoiner"):
+            yield hb
         yield {"type": "tool_end", "tool": "DataJoiner", "status": "success"}
-        yield {"type": "token", "content": "✅ Results merged and formatted.\n"}
 
         # Step 5: Generate Business Insights
         yield {"type": "tool_start", "tool": "BusinessInsights", "input": "Generating business insights..."}
-        subprocess.run([sys.executable, "BusinessInsightsGenerator.py", user_prompt], check=True)
+        async for hb in run_command_with_heartbeat([sys.executable, "BusinessInsightsGenerator.py", user_prompt], "BusinessInsights"):
+            yield hb
         yield {"type": "tool_end", "tool": "BusinessInsights", "status": "success"}
         yield {"type": "token", "content": "✅ Business insights generated.\n"}
 
@@ -166,12 +156,9 @@ async def run_master_agent(user_prompt: str) -> AsyncGenerator[dict, None]:
         else:
             yield {"type": "error", "content": "FinalResult.json was not generated."}
 
-    except subprocess.CalledProcessError as e:
-        logger.error(f"Script execution failed: {e}")
-        yield {"type": "error", "content": f"Pipeline failed at script execution: {e}"}
     except Exception as e:
         logger.error(f"Master Agent Error: {e}")
-        yield {"type": "error", "content": str(e)}
+        yield {"type": "error", "content": "An unexpected error occurred while processing your request. Please try again later."}
 
 if __name__ == "__main__":
     import asyncio

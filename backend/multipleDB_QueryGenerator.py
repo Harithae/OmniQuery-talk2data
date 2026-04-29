@@ -7,12 +7,14 @@ from tenacity import retry, wait_exponential, stop_after_attempt
 # Load environment variables
 load_dotenv(override=True)
 
+from retry_utils import retry_decorator
+
 class SQLGenerator:
     def __init__(self, api_key: str, model: str = "openai/gpt-oss-120b"):
         self.client = Groq(api_key=api_key)
         self.model = model
 
-    @retry(wait=wait_exponential(multiplier=1, min=2, max=10), stop=stop_after_attempt(3))
+    @retry_decorator(retries=3, delay=2)
     def generate_sql(self, system_prompt: str, user_prompt: str) -> str:
         """
         Generates SQL query using Groq LLM
@@ -72,6 +74,7 @@ if __name__ == "__main__":
         Rules:
         - Output ONLY a JSON object. No explanation, no conversational text.
         - SECURITY RULE: You must ONLY generate SELECT queries for SQL databases. Under no circumstances should you generate queries involving INSERT, UPDATE, DELETE, DROP, ALTER, CREATE, EXEC, EXECUTE, TRUNCATE, REPLACE, GRANT, or REVOKE operations. Similarly, for MongoDB, you must only generate read operations, not $out or $merge. If the user prompt implies or requests a data modification or schema extraction, you should refuse by returning exactly: {{"error": "I'm sorry, but I can't help with that. Modifying data or extracting schema is forbidden."}}.
+        - RELEVANCE RULE: If the user prompt cannot be answered using the provided tables/collections, you must refuse by returning exactly: {{"error": "I can help with only Customer, Sales and Order information."}}
         - Use valid SQL syntax for SQL databases (Postgres_Sales_DB, SQL_Inventory_DB).
         - For MongoDB (Mongo_Customer_DB), output a stringified JSON object exactly in this format: '{{"collection": "collection_name", "pipeline": [...]}}'
         - IMPORTANT (MongoDB): When using a placeholder with the "$in" operator, you MUST wrap it in square brackets. Example: '{{"$match": {{"Field": {{"$in": [{{OtherDB.Field}}]}}}}}}'
