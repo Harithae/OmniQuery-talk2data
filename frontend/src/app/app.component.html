@@ -71,27 +71,29 @@
           <!-- Show first 10 rows by default if results exist -->
           <div class="data-table-container" *ngIf="msg.results && !msg.showChart && !msg.showFullResults">
             <h3 class="results-heading">Results Summary</h3>
-            <table class="result-table">
-              <thead>
-                <tr>
-                  <th *ngFor="let col of getColumns(msg.results); let colIndex = index" 
-                      [style.width]="getColumnWidth(i, colIndex)">
-                    {{ col }}
-                    <div class="resize-handle" 
-                         *ngIf="colIndex < getColumns(msg.results).length - 1"
-                         (mousedown)="onResizeStart(i, colIndex, $event)"></div>
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr *ngFor="let row of msg.results.slice(0, 10)">
-                  <td *ngFor="let col of getColumns(msg.results); let colIndex = index"
-                      [style.width]="getColumnWidth(i, colIndex)">
-                    {{ row[getColumnKey(msg.results, col)] }}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+            <div class="table-scroll-wrapper">
+              <table class="result-table">
+                <thead>
+                  <tr>
+                    <th *ngFor="let col of getColumns(msg.results); let colIndex = index" 
+                        [style.width]="getColumnWidth(i, colIndex)">
+                      {{ col }}
+                      <div class="resize-handle" 
+                           *ngIf="colIndex < getColumns(msg.results).length - 1"
+                           (mousedown)="onResizeStart(i, colIndex, $event)"></div>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let row of msg.results.slice(0, 10)">
+                    <td *ngFor="let col of getColumns(msg.results); let colIndex = index"
+                        [style.width]="getColumnWidth(i, colIndex)">
+                      {{ row[getColumnKey(msg.results, col)] }}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
             <div class="table-note" *ngIf="msg.hasMoreRows">
               <p>Showing first 10 rows. For complete data, use "View Table" → "View Full Results".</p>
             </div>
@@ -100,27 +102,29 @@
           <!-- Show full results table -->
           <div class="data-table-container" *ngIf="msg.results && msg.showFullResults">
             <h3 class="results-heading">Results Summary</h3>
-            <table class="result-table">
-              <thead>
-                <tr>
-                  <th *ngFor="let col of getColumns(msg.results); let colIndex = index"
-                      [style.width]="getColumnWidth(i, colIndex)">
-                    {{ col }}
-                    <div class="resize-handle" 
-                         *ngIf="colIndex < getColumns(msg.results).length - 1"
-                         (mousedown)="onResizeStart(i, colIndex, $event)"></div>
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr *ngFor="let row of msg.results">
-                  <td *ngFor="let col of getColumns(msg.results); let colIndex = index"
-                      [style.width]="getColumnWidth(i, colIndex)">
-                    {{ row[getColumnKey(msg.results, col)] }}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+            <div class="table-scroll-wrapper">
+              <table class="result-table">
+                <thead>
+                  <tr>
+                    <th *ngFor="let col of getColumns(msg.results); let colIndex = index"
+                        [style.width]="getColumnWidth(i, colIndex)">
+                      {{ col }}
+                      <div class="resize-handle" 
+                           *ngIf="colIndex < getColumns(msg.results).length - 1"
+                           (mousedown)="onResizeStart(i, colIndex, $event)"></div>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let row of msg.results">
+                    <td *ngFor="let col of getColumns(msg.results); let colIndex = index"
+                        [style.width]="getColumnWidth(i, colIndex)">
+                      {{ row[getColumnKey(msg.results, col)] }}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
 
           <div class="chart-container" *ngIf="msg.showChart">
@@ -135,7 +139,6 @@
           </div>
 
           <div class="insight-container" *ngIf="msg.insight" [innerHTML]="msg.insight | markdown" style="margin-top: 15px; padding: 15px; background-color: rgba(99, 102, 241, 0.05); border-left: 4px solid #6366f1; border-radius: 6px; font-size: 0.95em; color: #334155; line-height: 1.5;"></div>
-
 
           <div class="message-meta" *ngIf="msg.text">{{ msg.timestamp | date:'shortTime' }}</div>
         </div>

@@ -44,7 +44,6 @@ interface Message {
   chartInstance?: Chart | null;
   results?: any;
   showDataTable?: boolean;
-<<<<<<< HEAD
   chartType?: 'bar' | 'line' | 'doughnut' | 'horizontalBar';
   chartTotal?: number;
   chartZoom?: number;
@@ -52,9 +51,7 @@ interface Message {
   showFullResults?: boolean;
   showTableOptions?: boolean;
   columnWidths?: number[];
-=======
   insight?: string;
->>>>>>> main
 }
 
 @Component({
