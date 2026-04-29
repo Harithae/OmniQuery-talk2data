@@ -2,11 +2,14 @@ from groq import Groq
 import os
 import json
 
+from retry_utils import retry_decorator
+
 class SQLGenerator:
     def __init__(self, api_key: str, model: str = "openai/gpt-oss-120b"):
         self.client = Groq(api_key=api_key)
         self.model = model
 
+    @retry_decorator(retries=3, delay=2)
     def generate_sql(self, system_prompt: str, user_prompt: str) -> str:
         """
         Generates SQL query using Groq LLM

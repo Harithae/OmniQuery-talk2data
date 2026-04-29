@@ -3,8 +3,11 @@ import json
 import logging
 import subprocess
 import sys
+import time
 from typing import AsyncGenerator
 from dotenv import load_dotenv
+
+from retry_utils import run_command_with_retry
 
 load_dotenv(override=True)
 
@@ -23,16 +26,16 @@ async def run_master_agent(user_prompt: str) -> AsyncGenerator[dict, None]:
     try:
         # Step 1: Extract Schema
         yield {"type": "tool_start", "tool": "DBSchemaExtractor", "input": "Extracting database schemas..."}
-        subprocess.run([sys.executable, "DBSchemaExtractor.py"], check=True)
+        await run_command_with_retry([sys.executable, "DBSchemaExtractor.py"], "DBSchemaExtractor")
         yield {"type": "tool_end", "tool": "DBSchemaExtractor", "status": "success"}
-        yield {"type": "token", "content": "✅ Database schemas extracted.\n"}
+        #yield {"type": "token", "content": "✅ Database schemas extracted.\n"}
 
         # Step 2: Generate Query Plan
         yield {"type": "tool_start", "tool": "QueryGenerator", "input": user_prompt}
         # multipleDB_QueryGenerator.py writes to llm_output.json
-        subprocess.run([sys.executable, "multipleDB_QueryGenerator.py", user_prompt], check=True)
+        await run_command_with_retry([sys.executable, "multipleDB_QueryGenerator.py", user_prompt], "QueryGenerator")
         yield {"type": "tool_end", "tool": "QueryGenerator", "status": "success"}
-        yield {"type": "token", "content": "✅ Multi-DB query plan generated.\n"}
+       # yield {"type": "token", "content": "✅ Multi-DB query plan generated.\n"}
 
         # --- DATA GUARDRAILS ---
         if os.path.exists("llm_output.json"):
@@ -94,20 +97,20 @@ async def run_master_agent(user_prompt: str) -> AsyncGenerator[dict, None]:
         # Step 3: Execute Queries
         yield {"type": "tool_start", "tool": "QueryExecutor", "input": "Executing cross-database queries..."}
         # QueryExecutor.py reads llm_output.json and writes to QueryOutput.json
-        subprocess.run([sys.executable, "QueryExecutor.py"], check=True)
+        await run_command_with_retry([sys.executable, "QueryExecutor.py"], "QueryExecutor")
         yield {"type": "tool_end", "tool": "QueryExecutor", "status": "success"}
-        yield {"type": "token", "content": "✅ Queries executed successfully.\n"}
+        #yield {"type": "token", "content": "✅ Queries executed successfully.\n"}
 
         # Step 4: Join Results
         yield {"type": "tool_start", "tool": "DataJoiner", "input": "Merging results..."}
         # DataJoiner.py reads QueryOutput.json and llm_output.json, writes to FinalResult.json
-        subprocess.run([sys.executable, "DataJoiner.py"], check=True)
+        await run_command_with_retry([sys.executable, "DataJoiner.py"], "DataJoiner")
         yield {"type": "tool_end", "tool": "DataJoiner", "status": "success"}
-        yield {"type": "token", "content": "✅ Data merged and finalized.\n"}
+        #yield {"type": "token", "content": "✅ Data merged and finalized.\n"}
 
         # Step 5: Generate Business Insights
         yield {"type": "tool_start", "tool": "BusinessInsights", "input": "Generating business insights..."}
-        subprocess.run([sys.executable, "BusinessInsightsGenerator.py", user_prompt], check=True)
+        await run_command_with_retry([sys.executable, "BusinessInsightsGenerator.py", user_prompt], "BusinessInsights")
         yield {"type": "tool_end", "tool": "BusinessInsights", "status": "success"}
         yield {"type": "token", "content": "✅ Business insights generated.\n"}
 

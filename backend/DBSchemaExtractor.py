@@ -3,7 +3,9 @@ import json
 import pymongo
 from dotenv import load_dotenv
 from sqlalchemy import create_engine, inspect
+from retry_utils import retry_decorator
 
+@retry_decorator(retries=3, delay=2)
 def extract_schema(connection_string, output_file):
     engine = create_engine(connection_string)
     inspector = inspect(engine)
@@ -70,6 +72,7 @@ def extract_schema(connection_string, output_file):
 
     print(f"Schema extracted successfully to {output_file}")
 
+@retry_decorator(retries=3, delay=2)
 def extract_mongo_schema(uri, db_name, output_file):
     client = pymongo.MongoClient(uri)
     db = client[db_name]

@@ -3,9 +3,11 @@ import json
 import sys
 from groq import Groq
 from dotenv import load_dotenv
+from retry_utils import retry_decorator
 
 load_dotenv(override=True)
 
+@retry_decorator(retries=3, delay=2)
 def generate_insights(user_prompt: str, data_json_str: str) -> str:
     api_key = os.getenv("GROQ_API_KEY")
     if not api_key:

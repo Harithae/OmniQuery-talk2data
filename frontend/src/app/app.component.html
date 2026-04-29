@@ -143,9 +143,14 @@
           <div class="message-meta" *ngIf="msg.text">{{ msg.timestamp | date:'shortTime' }}</div>
         </div>
       </div>
-      <div *ngIf="isLoading && !currentStatus" class="message-wrapper">
-        <div class="message-bubble loading">
-          <div class="typing-indicator">
+      <!-- Progress / Loading Indicator -->
+      <div *ngIf="isLoading" class="message-wrapper">
+        <div class="message-bubble agent-progress">
+          <div *ngIf="currentStatus" class="status-content">
+            <div class="spinner"></div>
+            <span>{{ currentStatus }}</span>
+          </div>
+          <div *ngIf="!currentStatus" class="typing-indicator">
             <span></span>
             <span></span>
             <span></span>
