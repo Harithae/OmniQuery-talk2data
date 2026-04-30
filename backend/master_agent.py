@@ -5,9 +5,9 @@ import subprocess
 import sys
 import time
 from typing import AsyncGenerator
-from groq import Groq
 from dotenv import load_dotenv
 from retry_utils import run_command_with_heartbeat
+from llm_client import get_llm_client
 
 load_dotenv(override=True)
 
@@ -19,14 +19,10 @@ def is_retail_domain(user_prompt: str) -> bool:
     """
     Checks if the user prompt is related to the retail domain.
     """
-    api_key = os.getenv("GROQ_API_KEY")
-    if not api_key:
-        logger.warning("GROQ_API_KEY not found. Skipping domain check.")
-        return True
-    
     try:
-        client = Groq(api_key=api_key)
-        model = os.getenv("MODEL_NAME", "llama-3.1-8b-instant")
+        # Use a lightweight model for domain validation
+        # Always use Groq for this check (fast and cheap)
+        client = get_llm_client(provider="groq", model="llama-3.1-8b-instant")
         
         system_prompt = (
             "You are a domain validator. Determine if the user's query is related to RETAIL "
@@ -34,8 +30,7 @@ def is_retail_domain(user_prompt: str) -> bool:
             "Respond with 'YES' if it is related, and 'NO' otherwise. Return ONLY 'YES' or 'NO'."
         )
         
-        response = client.chat.completions.create(
-            model=model,
+        decision = client.chat_completion(
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt}
@@ -44,10 +39,10 @@ def is_retail_domain(user_prompt: str) -> bool:
             max_tokens=5
         )
         
-        decision = response.choices[0].message.content.strip().upper()
-        return "YES" in decision
+        return "YES" in decision.upper()
     except Exception as e:
         logger.error(f"Domain check error: {e}")
+        return True  # Fallback to proceed if check fails
         return True # Fallback to proceed if check fails
 
 async def run_master_agent(user_prompt: str) -> AsyncGenerator[dict, None]:

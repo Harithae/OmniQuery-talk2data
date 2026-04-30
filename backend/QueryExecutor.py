@@ -43,6 +43,9 @@ class _Encoder(json.JSONEncoder):
 # Connection helpers
 # ---------------------------------------------------------------------------
 def _pg_conn():
+    dsn = os.getenv("PG_DB_CONN", "").strip('"').strip("'")
+    if dsn:
+        return psycopg2.connect(dsn)
     return psycopg2.connect(
         host=os.getenv("POSTGRES_HOST", "localhost"),
         port=os.getenv("POSTGRES_PORT", "5432"),

@@ -1,8 +1,8 @@
-from groq import Groq
 import os
 import json
 from dotenv import load_dotenv
 from tenacity import retry, wait_exponential, stop_after_attempt
+from llm_client import get_llm_client
 
 # Load environment variables
 load_dotenv(override=True)
@@ -10,32 +10,28 @@ load_dotenv(override=True)
 from retry_utils import retry_decorator
 
 class SQLGenerator:
-    def __init__(self, api_key: str, model: str = "openai/gpt-oss-120b"):
-        self.client = Groq(api_key=api_key)
-        self.model = model
+    def __init__(self, llm_client=None):
+        """
+        Initialize SQL Generator with an LLM client.
+        
+        Args:
+            llm_client: Optional LLMClient instance. If None, creates one from env config.
+        """
+        self.llm_client = llm_client or get_llm_client()
 
     @retry_decorator(retries=3, delay=2)
     def generate_sql(self, system_prompt: str, user_prompt: str) -> str:
         """
-        Generates SQL query using Groq LLM
+        Generates SQL query using configured LLM provider
         """
         try:
-            response = self.client.chat.completions.create(
-                model=self.model,
+            sql_query = self.llm_client.chat_completion(
                 messages=[
-                    {
-                        "role": "system",
-                        "content": system_prompt
-                    },
-                    {
-                        "role": "user",
-                        "content": user_prompt
-                    }
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt}
                 ],
                 temperature=0.1
             )
-
-            sql_query = response.choices[0].message.content.strip()
 
             if sql_query.startswith("```"):
                 sql_query = sql_query.replace("```json", "").replace("```sql", "").replace("```", "").strip()
@@ -101,12 +97,7 @@ def load_schemas():
     return compact_schema
 
 if __name__ == "__main__":
-    API_KEY = os.getenv("GROQ_API_KEY")
-    MODEL_NAME = os.getenv("MODEL_NAME", "llama-3.1-8b-instant")
-    if not API_KEY:
-        print("Please set GROQ_API_KEY in your environment or .env file.")
-        exit(1)
-    sql_generator = SQLGenerator(api_key=API_KEY)
+    sql_generator = SQLGenerator()
     schemas_json = load_schemas()
 
     system_prompt = f"""
