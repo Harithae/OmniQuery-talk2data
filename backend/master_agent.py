@@ -63,7 +63,7 @@ async def run_master_agent(user_prompt: str) -> AsyncGenerator[dict, None]:
         if not is_retail_domain(user_prompt):
             yield {
                 "type": "token", 
-                "content": "I'm sorry, but I can only help with queries related to the retail domain (Customers, Sales, and Order information). Please try asking something else!"
+                "content": "I'm sorry, but I can only help with queries related to the retail domain (Customers, Sales, Order, Products and Inventory information). Please try asking something else!"
             }
             return
 

@@ -1,0 +1,589 @@
+{
+    "databases": {
+        "Mongo_Customer_DB": {
+            "tables": {
+                "Customer_Address": {
+                    "table_description": "Stores customer addresses, including city, state, country, ZIP code, and contact numbers.",
+                    "columns": {
+                        "_id": {
+                            "description": "Unique identifier for each customer address.",
+                            "example_value": "69ec803fb42e12af8c2572ce"
+                        },
+                        "Customer_Address_ID": {
+                            "description": "Unique identifier for each customer address.",
+                            "example_value": 1
+                        },
+                        "Customer_ID": {
+                            "description": "Foreign key referencing the customer ID in the customer table.",
+                            "example_value": 1
+                        },
+                        "City": {
+                            "description": "City where the customer is located.",
+                            "example_value": "Houston"
+                        },
+                        "State": {
+                            "description": "State where the customer is located.",
+                            "example_value": "TX"
+                        },
+                        "Country": {
+                            "description": "Country where the customer is located.",
+                            "example_value": "USA"
+                        },
+                        "ZIP_Code": {
+                            "description": "ZIP code of the customer's location.",
+                            "example_value": "52582"
+                        },
+                        "Primary_Contact_Number": {
+                            "description": "Primary contact number for the customer.",
+                            "example_value": "+1-478-477-5604"
+                        },
+                        "Secondary_Contact_Number": {
+                            "description": "Secondary contact number for the customer.",
+                            "example_value": "+1-738-268-8740"
+                        },
+                        "Created_Date": {
+                            "description": "Date when the customer address was created.",
+                            "example_value": "2025-12-29T04:02:31.744000"
+                        },
+                        "Modified_Date": {
+                            "description": "Date when the customer address was last modified.",
+                            "example_value": null
+                        }
+                    }
+                },
+                "Customer": {
+                    "table_description": "The Customer table stores information about individual customers, including their personal details, contact information, and creation/modification dates.",
+                    "columns": {
+                        "_id": {
+                            "description": "Unique identifier for each customer.",
+                            "example_value": "69ec803fb42e12af8c25726a"
+                        },
+                        "Customer_ID": {
+                            "description": "Unique identifier assigned to each customer.",
+                            "example_value": 1
+                        },
+                        "First_Name": {
+                            "description": "Customer's first name.",
+                            "example_value": "John"
+                        },
+                        "Middle_Name": {
+                            "description": "Customer's middle name (optional).",
+                            "example_value": "C."
+                        },
+                        "Last_Name": {
+                            "description": "Customer's last name.",
+                            "example_value": "Gonzalez"
+                        },
+                        "DOB": {
+                            "description": "Customer's date of birth.",
+                            "example_value": "2002-09-04T00:00:00"
+                        },
+                        "Gender": {
+                            "description": "Customer's gender.",
+                            "example_value": "Female"
+                        },
+                        "Email_ID": {
+                            "description": "Customer's email address.",
+                            "example_value": "john.gonzalez1@example.com"
+                        },
+                        "Created_Date": {
+                            "description": "Date and time when the customer record was created.",
+                            "example_value": "2025-12-05T15:48:21.744000"
+                        },
+                        "Modified_Date": {
+                            "description": "Date and time when the customer record was last modified (null if not modified).",
+                            "example_value": null
+                        }
+                    }
+                },
+                "Customer_View_History": {
+                    "table_description": "Stores a history of customer views for products, including the product price and date of view.",
+                    "columns": {
+                        "_id": {
+                            "description": "Unique identifier for each customer view history entry.",
+                            "example_value": "69ec803fb42e12af8c257343"
+                        },
+                        "Customer_View_History_ID": {
+                            "description": "Unique identifier for each customer view history entry.",
+                            "example_value": 1
+                        },
+                        "Customer_ID": {
+                            "description": "Identifier for the customer who viewed the product.",
+                            "example_value": 1
+                        },
+                        "Product_ID": {
+                            "description": "Identifier for the product viewed by the customer.",
+                            "example_value": 16
+                        },
+                        "Product_Price": {
+                            "description": "Price of the product viewed by the customer.",
+                            "example_value": 1674.25
+                        },
+                        "Created_Date": {
+                            "description": "Date and time when the customer view history entry was created.",
+                            "example_value": "2025-12-03T20:25:28.744000"
+                        },
+                        "Modified_Date": {
+                            "description": "Date and time when the customer view history entry was last modified (currently not used).",
+                            "example_value": null
+                        }
+                    }
+                },
+                "Customer_Wish_List_Item": {
+                    "table_description": "This table stores items in a customer's wish list, including the product ID, price, and creation date.",
+                    "columns": {
+                        "_id": {
+                            "description": "Unique identifier for each wish list item.",
+                            "example_value": "69ec803fb42e12af8c2574cc"
+                        },
+                        "Customer_Wish_List_Item_ID": {
+                            "description": "Unique identifier for each wish list item.",
+                            "example_value": 1
+                        },
+                        "Customer_Wish_List_ID": {
+                            "description": "Identifier for the customer's wish list.",
+                            "example_value": 1
+                        },
+                        "Product_ID": {
+                            "description": "Identifier for the product in the wish list.",
+                            "example_value": 181
+                        },
+                        "Product_Price": {
+                            "description": "Price of the product in the wish list.",
+                            "example_value": 12227.43
+                        },
+                        "Created_Date": {
+                            "description": "Date when the wish list item was created.",
+                            "example_value": "2026-02-06T07:03:52.744000"
+                        },
+                        "Modified_Date": {
+                            "description": "Date when the wish list item was last modified (currently not used).",
+                            "example_value": null
+                        }
+                    }
+                },
+                "Customer_Wish_List": {
+                    "table_description": "The Customer_Wish_List table stores information about customer wish lists, including the list name, customer ID, and creation date.",
+                    "columns": {
+                        "_id": {
+                            "description": "Unique identifier for each customer wish list.",
+                            "example_value": "69ec803fb42e12af8c257468"
+                        },
+                        "Customer_Wish_List_ID": {
+                            "description": "Unique identifier for each customer wish list.",
+                            "example_value": 1
+                        },
+                        "Wish_List_Name": {
+                            "description": "Name of the customer's wish list.",
+                            "example_value": "John's Favorites"
+                        },
+                        "Customer_ID": {
+                            "description": "Identifier for the customer who owns the wish list.",
+                            "example_value": 1
+                        },
+                        "Created_Date": {
+                            "description": "Date and time when the wish list was created.",
+                            "example_value": "2026-03-09T18:38:54.744000"
+                        },
+                        "Modified_Date": {
+                            "description": "Date and time when the wish list was last modified (currently not used).",
+                            "example_value": null
+                        }
+                    }
+                }
+            }
+        },
+        "Postgres_Sales_DB": {
+            "tables": {
+                "shipments": {
+                    "table_description": "This table stores information about shipments, including their status, delivery dates, and relationships to orders.",
+                    "columns": {
+                        "shipment_id": {
+                            "description": "Unique identifier for each shipment.",
+                            "example_value": 1
+                        },
+                        "shipment_status": {
+                            "description": "Current status of the shipment (e.g., Delivered, Shipped, etc.).",
+                            "example_value": "Delivered"
+                        },
+                        "order_id": {
+                            "description": "Foreign key referencing the order this shipment belongs to.",
+                            "example_value": 1
+                        },
+                        "delivery_date": {
+                            "description": "Date when the shipment was delivered.",
+                            "example_value": "2026-04-26T14:20:16.533819"
+                        },
+                        "created_date": {
+                            "description": "Date when the shipment was created.",
+                            "example_value": "2026-04-25T14:20:16.533819"
+                        },
+                        "modified_date": {
+                            "description": "Date when the shipment was last modified (null if not modified).",
+                            "example_value": null
+                        }
+                    }
+                },
+                "invoices": {
+                    "table_description": "The invoices table stores information about customer invoices, including payment and order details.",
+                    "columns": {
+                        "invoice_id": {
+                            "description": "Unique identifier for each invoice.",
+                            "example_value": 1
+                        },
+                        "payment_id": {
+                            "description": "Foreign key referencing the payment method used for the invoice.",
+                            "example_value": 1
+                        },
+                        "order_id": {
+                            "description": "Foreign key referencing the order associated with the invoice.",
+                            "example_value": 1
+                        },
+                        "invoice_date": {
+                            "description": "Date the invoice was issued.",
+                            "example_value": "2026-04-22T16:20:16.533819"
+                        },
+                        "amount": {
+                            "description": "Total amount due for the invoice.",
+                            "example_value": 71283.89
+                        },
+                        "created_date": {
+                            "description": "Date the invoice was created.",
+                            "example_value": "2026-04-25T14:20:16.533819"
+                        },
+                        "modified_date": {
+                            "description": "Date the invoice was last modified (if applicable).",
+                            "example_value": null
+                        }
+                    }
+                },
+                "payments": {
+                    "table_description": "This table stores payment information for orders, including payment method, status, and date.",
+                    "columns": {
+                        "payment_id": {
+                            "description": "Unique identifier for each payment.",
+                            "example_value": 1
+                        },
+                        "order_id": {
+                            "description": "Foreign key referencing the order this payment belongs to.",
+                            "example_value": 1
+                        },
+                        "payment_method": {
+                            "description": "Method used for the payment (e.g., Debit Card, Bank Transfer).",
+                            "example_value": "Debit Card"
+                        },
+                        "payment_status": {
+                            "description": "Current status of the payment (e.g., Completed, Pending).",
+                            "example_value": "Completed"
+                        },
+                        "created_date": {
+                            "description": "Timestamp when the payment was created.",
+                            "example_value": "2026-04-25T14:20:16.533819"
+                        },
+                        "modified_date": {
+                            "description": "Timestamp when the payment was last modified (null if not modified).",
+                            "example_value": null
+                        }
+                    }
+                },
+                "order_items": {
+                    "table_description": "This table stores information about individual items within orders, including the order ID, product ID, quantity, price, and timestamps for creation and modification.",
+                    "columns": {
+                        "order_items_id": {
+                            "description": "Unique identifier for each order item.",
+                            "example_value": 1
+                        },
+                        "order_id": {
+                            "description": "Foreign key referencing the order this item belongs to.",
+                            "example_value": 1
+                        },
+                        "product_id": {
+                            "description": "Foreign key referencing the product being ordered.",
+                            "example_value": 79
+                        },
+                        "quantity": {
+                            "description": "Number of items ordered.",
+                            "example_value": 1
+                        },
+                        "price": {
+                            "description": "Total price of the ordered items.",
+                            "example_value": 8648.18
+                        },
+                        "created_date": {
+                            "description": "Timestamp when the order item was created.",
+                            "example_value": "2026-04-25T14:20:16.533819"
+                        },
+                        "modified_date": {
+                            "description": "Timestamp when the order item was last modified (null if not modified).",
+                            "example_value": null
+                        }
+                    }
+                },
+                "Order": {
+                    "table_description": "This table stores information about customer orders, including the order date, amount, and associated customer and address IDs.",
+                    "columns": {
+                        "order_id": {
+                            "description": "Unique identifier for each order.",
+                            "example_value": 1
+                        },
+                        "customer_id": {
+                            "description": "Foreign key referencing the customer who made the order.",
+                            "example_value": 1
+                        },
+                        "customer_address_id": {
+                            "description": "Foreign key referencing the address associated with the customer who made the order.",
+                            "example_value": 1
+                        },
+                        "order_date": {
+                            "description": "Date the order was made.",
+                            "example_value": "2026-04-22T14:20:16.533819"
+                        },
+                        "order_amount": {
+                            "description": "Total amount of the order.",
+                            "example_value": 71283.89
+                        },
+                        "created_date": {
+                            "description": "Date the order was created.",
+                            "example_value": "2026-04-25T14:20:16.533819"
+                        },
+                        "modified_date": {
+                            "description": "Date the order was last modified (if applicable).",
+                            "example_value": null
+                        }
+                    }
+                }
+            }
+        },
+        "SQL_Inventory_DB": {
+            "tables": {
+                "Locality": {
+                    "table_description": "The Locality table stores information about different locations, including their area, city, state, country, and zip code.",
+                    "columns": {
+                        "Location_ID": {
+                            "description": "Unique identifier for each location.",
+                            "example_value": 1
+                        },
+                        "Area": {
+                            "description": "The area within a city.",
+                            "example_value": "Manhattan"
+                        },
+                        "City": {
+                            "description": "The city where the location is situated.",
+                            "example_value": "New York"
+                        },
+                        "State": {
+                            "description": "The state where the location is situated.",
+                            "example_value": "NY"
+                        },
+                        "Country": {
+                            "description": "The country where the location is situated.",
+                            "example_value": "USA"
+                        },
+                        "ZipCode": {
+                            "description": "The zip code of the location.",
+                            "example_value": "10001"
+                        },
+                        "Created_Date": {
+                            "description": "The date when the location was created.",
+                            "example_value": "2025-12-07T18:16:22.363000"
+                        },
+                        "Modified_Date": {
+                            "description": "The date when the location was last modified (if applicable).",
+                            "example_value": null
+                        }
+                    }
+                },
+                "Product": {
+                    "table_description": "The Product table stores information about products in the database, including their name, price, description, category, and creation/modification dates.",
+                    "columns": {
+                        "Product_ID": {
+                            "description": "Unique identifier for each product.",
+                            "example_value": 1
+                        },
+                        "Product_Name": {
+                            "description": "Name of the product.",
+                            "example_value": "Wireless Bluetooth Headphones"
+                        },
+                        "Product_Price": {
+                            "description": "Price of the product.",
+                            "example_value": 9561.14
+                        },
+                        "Product_Description": {
+                            "description": "Description of the product.",
+                            "example_value": "High-quality wireless bluetooth headphones with excellent features and durability. Perfect for both professional and personal use."
+                        },
+                        "Product_Category_ID": {
+                            "description": "Identifier of the product category.",
+                            "example_value": 1
+                        },
+                        "Created_Date": {
+                            "description": "Date when the product was created.",
+                            "example_value": "2025-11-06T11:45:58.923000"
+                        },
+                        "Modified_Date": {
+                            "description": "Date when the product was last modified.",
+                            "example_value": null
+                        }
+                    }
+                },
+                "Product_Category": {
+                    "table_description": "This table stores product categories with their respective details, including target gender and age groups.",
+                    "columns": {
+                        "Product_Category_ID": {
+                            "description": "Unique identifier for each product category.",
+                            "example_value": 1
+                        },
+                        "Product_Category_Name": {
+                            "description": "Name of the product category.",
+                            "example_value": "Electronics & Gadgets"
+                        },
+                        "Target_Gender": {
+                            "description": "Target gender for the product category.",
+                            "example_value": "Unisex"
+                        },
+                        "Target_Age_Group_From": {
+                            "description": "Minimum age group for the product category.",
+                            "example_value": 15
+                        },
+                        "Target_Age_Group_To": {
+                            "description": "Maximum age group for the product category.",
+                            "example_value": 65
+                        },
+                        "Created_Date": {
+                            "description": "Date when the product category was created.",
+                            "example_value": "2026-03-18T01:27:25.310000"
+                        },
+                        "Modified_Date": {
+                            "description": "Date when the product category was last modified.",
+                            "example_value": null
+                        }
+                    }
+                },
+                "Product_Features": {
+                    "table_description": "This table stores product features for each product in the database, including feature names and values.",
+                    "columns": {
+                        "Product_Feature_ID": {
+                            "description": "Unique identifier for each product feature.",
+                            "example_value": 1
+                        },
+                        "Product_ID": {
+                            "description": "Foreign key referencing the Product table, linking a product to its features.",
+                            "example_value": 1
+                        },
+                        "Product_Feature_Name": {
+                            "description": "Name of the product feature, such as 'Color' or 'Size'.",
+                            "example_value": "Color"
+                        },
+                        "Product_Feature_Value": {
+                            "description": "Value of the product feature, such as 'Black' or 'Free Size'.",
+                            "example_value": "Black"
+                        },
+                        "Created_Date": {
+                            "description": "Date and time when the product feature was created.",
+                            "example_value": "2025-11-02T15:31:11.077000"
+                        },
+                        "Modified_Date": {
+                            "description": "Date and time when the product feature was last modified (null if never modified).",
+                            "example_value": null
+                        }
+                    }
+                },
+                "Product_Image": {
+                    "table_description": "This table stores product images along with their creation and modification dates.",
+                    "columns": {
+                        "Product_Image_ID": {
+                            "description": "Unique identifier for each product image.",
+                            "example_value": 1
+                        },
+                        "Product_ID": {
+                            "description": "Foreign key referencing the Product table.",
+                            "example_value": 1
+                        },
+                        "Product_Image": {
+                            "description": "The actual product image.",
+                            "example_value": null
+                        },
+                        "Created_Date": {
+                            "description": "Date and time when the product image was created.",
+                            "example_value": "2025-12-20T18:02:14.127000"
+                        },
+                        "Modified_Date": {
+                            "description": "Date and time when the product image was last modified.",
+                            "example_value": null
+                        }
+                    }
+                },
+                "Store": {
+                    "table_description": "The Store table stores information about individual retail stores, including their location, name, address, and owner details.",
+                    "columns": {
+                        "Store_ID": {
+                            "description": "Unique identifier for each store.",
+                            "example_value": 1
+                        },
+                        "Location_ID": {
+                            "description": "Foreign key referencing the Location_ID in the Locality table.",
+                            "example_value": 20
+                        },
+                        "Store_Name": {
+                            "description": "Name of the retail store.",
+                            "example_value": "Future Tech"
+                        },
+                        "Store_Address": {
+                            "description": "Address of the retail store.",
+                            "example_value": "122 Market Lane, Block B"
+                        },
+                        "Store_Owner_Name": {
+                            "description": "Name of the store owner.",
+                            "example_value": "Daniel Harris"
+                        },
+                        "Store_Owner_Phone": {
+                            "description": "Phone number of the store owner.",
+                            "example_value": "+1-987-395-1680"
+                        },
+                        "Store_Owner_Email": {
+                            "description": "Email address of the store owner.",
+                            "example_value": "futuretech1@techretail.com"
+                        },
+                        "Created_Date": {
+                            "description": "Date and time when the store was created.",
+                            "example_value": "2025-12-02T06:30:23.460000"
+                        },
+                        "Modified_Date": {
+                            "description": "Date and time when the store was last modified (null if not modified).",
+                            "example_value": null
+                        }
+                    }
+                },
+                "Store_Products": {
+                    "table_description": "This table stores information about products available in each store, including stock quantity and dates of creation and modification.",
+                    "columns": {
+                        "Store_Products_ID": {
+                            "description": "Unique identifier for each product-store combination.",
+                            "example_value": 1
+                        },
+                        "Store_ID": {
+                            "description": "Identifier for the store where the product is available.",
+                            "example_value": 17
+                        },
+                        "Product_ID": {
+                            "description": "Identifier for the product available in the store.",
+                            "example_value": 1
+                        },
+                        "Stock_Quantity": {
+                            "description": "Current stock quantity of the product in the store.",
+                            "example_value": 462
+                        },
+                        "Created_Date": {
+                            "description": "Date when the product-store combination was created.",
+                            "example_value": "2025-11-08T18:23:34.140000"
+                        },
+                        "Modified_Date": {
+                            "description": "Date when the product-store combination was last modified.",
+                            "example_value": null
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

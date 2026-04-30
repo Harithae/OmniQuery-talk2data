@@ -49,13 +49,56 @@ class SQLGenerator:
 def load_schemas():
     schemas = {}
     schema_dir = "DBSchemas"
+    kb_path = "kb.json"
+    
     if os.path.exists(schema_dir):
         for filename in os.listdir(schema_dir):
             if filename.endswith(".json"):
                 db_name = filename.replace("_Schema.json", "")
                 with open(os.path.join(schema_dir, filename), "r") as f:
                     schemas[db_name] = json.load(f)
-    return json.dumps(schemas, separators=(',', ':'))
+    
+    kb_data = {}
+    if os.path.exists(kb_path):
+        try:
+            with open(kb_path, "r") as f:
+                kb_data = json.load(f).get("databases", {})
+        except: pass
+
+    compact_schema = ""
+    for db_name, db_info in schemas.items():
+        compact_schema += f"\nDatabase: {db_name}\n"
+        kb_db = kb_data.get(db_name, {}).get("tables", {})
+        
+        if "tables" in db_info:
+            for table_name, table_info in db_info["tables"].items():
+                desc = kb_db.get(table_name, {}).get("table_description", "No description.")
+                compact_schema += f"  Table: {table_name} ({desc})\n"
+                kb_cols = kb_db.get(table_name, {}).get("columns", {})
+                for col in table_info.get("columns", []):
+                    c_name = col.get("name")
+                    c_type = col.get("type")
+                    c_kb = kb_cols.get(c_name, {})
+                    c_desc = c_kb.get("description", "") if isinstance(c_kb, dict) else c_kb
+                    c_ex = c_kb.get("example_value") if isinstance(c_kb, dict) else None
+                    ex_str = f" [Ex: {c_ex}]" if c_ex is not None else ""
+                    compact_schema += f"    - {c_name} ({c_type}): {c_desc}{ex_str}\n"
+                    
+        if "collections" in db_info:
+            for coll_name, coll_info in db_info["collections"].items():
+                desc = kb_db.get(coll_name, {}).get("table_description", "No description.")
+                compact_schema += f"  Collection: {coll_name} ({desc})\n"
+                kb_fields = kb_db.get(coll_name, {}).get("columns", {})
+                for field in coll_info.get("fields", []):
+                    f_name = field.get("name")
+                    f_type = field.get("type", "mixed")
+                    f_kb = kb_fields.get(f_name, {})
+                    f_desc = f_kb.get("description", "") if isinstance(f_kb, dict) else f_kb
+                    f_ex = f_kb.get("example_value") if isinstance(f_kb, dict) else None
+                    ex_str = f" [Ex: {f_ex}]" if f_ex is not None else ""
+                    compact_schema += f"    - {f_name} ({f_type}): {f_desc}{ex_str}\n"
+
+    return compact_schema
 
 if __name__ == "__main__":
     API_KEY = os.getenv("GROQ_API_KEY")
@@ -74,7 +117,7 @@ if __name__ == "__main__":
         Rules:
         - Output ONLY a JSON object. No explanation, no conversational text.
         - SECURITY RULE: You must ONLY generate SELECT queries for SQL databases. Under no circumstances should you generate queries involving INSERT, UPDATE, DELETE, DROP, ALTER, CREATE, EXEC, EXECUTE, TRUNCATE, REPLACE, GRANT, or REVOKE operations. Similarly, for MongoDB, you must only generate read operations, not $out or $merge. If the user prompt implies or requests a data modification or schema extraction, you should refuse by returning exactly: {{"error": "I'm sorry, but I can't help with that. Modifying data or extracting schema is forbidden."}}.
-        - RELEVANCE RULE: If the user prompt cannot be answered using the provided tables/collections, you must refuse by returning exactly: {{"error": "I can help with only Customer, Sales and Order information."}}
+        - RELEVANCE RULE: If the query is completely unrelated to retail, sales, customers, inventory, or orders, return: {{"error": "This request appears to be outside my retail business domain."}}
         - Use valid SQL syntax for SQL databases (Postgres_Sales_DB, SQL_Inventory_DB).
         - For MongoDB (Mongo_Customer_DB), output a stringified JSON object exactly in this format: '{{"collection": "collection_name", "pipeline": [...]}}'
         - IMPORTANT (MongoDB): When using a placeholder with the "$in" operator, you MUST wrap it in square brackets. Example: '{{"$match": {{"Field": {{"$in": [{{OtherDB.Field}}]}}}}}}'
@@ -92,6 +135,7 @@ if __name__ == "__main__":
         - NO POST-JOIN AGGREGATION RULE: The data joiner script DOES NOT perform grouping, counting, or summing. If the user prompt requires an aggregation (like "total amount" or "count of orders"), you MUST perform that aggregation directly within your SQL or MongoDB queries. You CANNOT just select raw rows and expect the system to aggregate them later. For example, if you need a count per customer, your database query MUST include the COUNT() function and the GROUP BY clause.
         - Do not attempt to "optimize" by removing join keys; they are mandatory for the data stitching logic to function.
         - MANDATORY IN-QUERY FILTERING: If a database step (e.g., Step B) follows another step (Step A) in the "execution_order" and they are linked in "join.conditions", you MUST use a placeholder (e.g., {{StepA.Field}}) in Step B's query to filter the results at the source. Do NOT fetch all records and rely solely on the joiner to filter them later.
+        - KNOWLEDGE BASE UTILIZATION: Each table and column in the provided schema now includes a "description". Use these descriptions to understand the business context and purpose of each field. If a column description includes an "example value", use that exact format for your filters (e.g., for status or category filters).
         - DATA NORMALIZATION: The database uses State Abbreviations (e.g., "CA", "NY"). If the user provides a full state name like "California", you MUST use the abbreviation "CA" in your query filters.
         - FIELD NAME ACCURACY: MongoDB field names are CASE-SENSITIVE.
           * In the "Customer" collection, the field is "Customer_ID" (Title Case).
