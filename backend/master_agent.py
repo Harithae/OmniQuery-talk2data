@@ -26,7 +26,8 @@ def is_retail_domain(user_prompt: str) -> bool:
         
         system_prompt = (
             "You are a domain validator. Determine if the user's query is related to RETAIL "
-            "(Customers, Orders, Sales, Products, Inventory). "
+            "(Customers, Orders, Sales, Products, Stores, Inventory). "
+            "Note: Queries asking for geographical locations of customers or stores (e.g., 'nearby New York', 'in California') ARE valid retail queries. "
             "Respond with 'YES' if it is related, and 'NO' otherwise. Return ONLY 'YES' or 'NO'."
         )
         
