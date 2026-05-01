@@ -138,8 +138,11 @@ if __name__ == "__main__":
           * Failure to do this causes "Ambiguous Column Name" errors and is UNACCEPTABLE.
         - ALIAS RULE: If your SQL query involves a JOIN, you MUST use table aliases (e.g., `o`, `p`, `sp`) and you MUST prefix EVERY SINGLE column name in the SELECT, WHERE, GROUP BY, and ORDER BY clauses with its respective alias (e.g., `o.order_id`, `p.Product_Name`).
           * CASE SENSITIVITY: MongoDB collection names are CASE-SENSITIVE. Use "Customer" (Singular, Title Case), NOT "customers" or "customer".
-          * EXAMPLE: "order_items" and "Order" are in Postgres_Sales_DB. "Product" is in SQL_Inventory_DB.
-          * WARNING: You CANNOT join "order_items" and "Product" in a single SQL query because they are in DIFFERENT databases. You must query them separately and link them using placeholders (e.g. SELECT ... FROM Product WHERE Product_ID IN ({{Postgres_Sales_DB.product_id}})).
+        - CRITICAL: NO CROSS-DATABASE SQL: You CANNOT join tables from different databases in a single SQL query. If you need data from both Postgres and MongoDB, you MUST create two separate database entries in the "databases" list.
+          * BAD:  `SELECT ... FROM PostgresDB.Table p JOIN MongoDB.Collection m ...` (Impossible)
+          * GOOD: Step 1: Query Postgres. Step 2: Query Mongo. Let the "join.conditions" link them.
+          * The "DataJoiner" script is the ONLY component that performs cross-database joins. Do not attempt to do it in SQL.
+        - WARNING: You CANNOT join "order_items" and "Product" in a single SQL query because they are in DIFFERENT databases. You must query them separately and link them using placeholders (e.g. SELECT ... FROM Product WHERE Product_ID IN ({{Postgres_Sales_DB.product_id}})).
           * SQL DIALECT WARNING: SQL_Inventory_DB is a Microsoft SQL Server database. You MUST use 'TOP' instead of 'LIMIT' (e.g., SELECT TOP 2 Product_ID ...). Postgres_Sales_DB uses LIMIT.
         - EXPECTED DETAILS: When combining data from multiple tables (like orders, products, customers, customer Addresses, or stores), always retrieve basic descriptive details such as the Customer's First Name, Last Name, Email, the Product Name, and the Store Name whenever possible, even if not explicitly requested.
         - JSON STRUCTURE: The "databases" field MUST be a simple array of objects. NEVER wrap individual entries in quotes or return them as strings inside the array.
