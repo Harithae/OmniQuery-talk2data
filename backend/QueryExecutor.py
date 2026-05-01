@@ -73,13 +73,14 @@ def _mongo_db():
 _RE_IN   = re.compile(r'\bIN\s*\(\s*\{{1,2}([\w.]+)\.(\w+)\}{1,2}\s*\)', re.IGNORECASE)
 _RE_ANY  = re.compile(r'=\s*ANY\s*\(\s*\{{1,2}([\w.]+)\.(\w+)\}{1,2}\s*\)', re.IGNORECASE)
 _RE_EQ   = re.compile(r'=\s*\{{1,2}([\w.]+)\.(\w+)\}{1,2}', re.IGNORECASE)
+_RE_QUOTED_BARE = re.compile(r'["\']\{{1,2}([\w.]+)\.(\w+)\}{1,2}["\']')
 _RE_BARE = re.compile(r'\{{1,2}([\w.]+)\.(\w+)\}{1,2}')
 # Strip "AND <expr> IN ({placeholder})" or "AND <expr> = {placeholder}" when upstream is empty
 _RE_AND_IN  = re.compile(r'\s+AND\s+[\w."]+\s+IN\s*\(\s*\{{1,2}[\w.]+\.\w+\}{1,2}\s*\)', re.IGNORECASE)
 _RE_AND_EQ  = re.compile(r'\s+AND\s+[\w."]+\s*(?:=\s*(?:ANY\s*\()?\s*\{{1,2}[\w.]+\.\w+\}{1,2}\s*\)?|IN\s*\(\s*\{{1,2}[\w.]+\.\w+\}{1,2}\s*\))', re.IGNORECASE)
 
 
-def _resolve_placeholders(query: str, results_so_far: dict) -> str:
+def _resolve_placeholders(query: str, results_so_far: dict, db_type: str = "sql") -> str:
     def _values_for(db_key, field):
         rows = results_so_far.get(db_key, [])
         values = []
@@ -94,7 +95,10 @@ def _resolve_placeholders(query: str, results_so_far: dict) -> str:
         return values
 
     def _fmt(values):
-        return [f"'{v}'" if isinstance(v, str) else str(v) for v in values]
+        if db_type == "mongo":
+            return [f'"{v}"' if isinstance(v, str) else str(v) for v in values]
+        else:
+            return [f"'{v}'" if isinstance(v, str) else str(v) for v in values]
 
     def _is_empty_upstream(placeholder_text: str) -> bool:
         """Return True if the placeholder refers to a known-empty upstream result."""
@@ -155,6 +159,19 @@ def _resolve_placeholders(query: str, results_so_far: dict) -> str:
         return f"IN ({', '.join(formatted)})"
 
     query = _RE_EQ.sub(_sub_eq, query)
+
+    # Pass 3.5: quoted bare "{DB.Field}" or '{DB.Field}'
+    def _sub_quoted_bare(m):
+        db_parts, field = m.group(1), m.group(2)
+        db_key = db_parts.split('.')[0]
+        if db_key not in results_so_far:
+            return m.group(0)
+        values = _values_for(db_key, field)
+        if not values:
+            return "null" if db_type == "mongo" else "NULL"
+        return ", ".join(_fmt(values))
+
+    query = _RE_QUOTED_BARE.sub(_sub_quoted_bare, query)
 
     # Pass 4: bare {DB.Field}
     def _sub_bare(m):
@@ -342,9 +359,9 @@ def execute_plan(plan_file: str = "Outputs/llm_output.json",
             continue
 
         raw_query     = db_queries[db_name]
-        resolved_query = _resolve_placeholders(raw_query, results_so_far)
-        
         db_type = _detect_db_type(db_name)
+        resolved_query = _resolve_placeholders(raw_query, results_so_far, db_type)
+        
         print(f"[RUN]   {db_name}  ({db_type})")
 
         # Generic dependency check for all DB types
@@ -361,7 +378,7 @@ def execute_plan(plan_file: str = "Outputs/llm_output.json",
             rows = []
             resolved_query = "Short-circuited (empty upstream)"
         else:
-            resolved_query = _resolve_placeholders(raw_query, results_so_far)
+            resolved_query = _resolve_placeholders(raw_query, results_so_far, db_type)
             print(f"        Query : {resolved_query[:300]}{'...' if len(resolved_query) > 300 else ''}")
             try:
                 if db_type == "mongo":
