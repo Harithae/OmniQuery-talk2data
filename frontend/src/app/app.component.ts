@@ -211,20 +211,31 @@ export class AppComponent implements AfterViewChecked {
     msg.showFullResults = false;
     
     // Try to parse if not already parsed
-    if (!msg.chartData) {
+    if (!msg.chartData && msg.results) {
+      // If we have results data, use it directly instead of parsing markdown
       this.parseTableForChart(index);
     }
 
     // Only show if we actually have data
-    if (msg.chartData && msg.chartData.labels.length > 0) {
+    if (msg.chartData && msg.chartData.labels && msg.chartData.labels.length > 0) {
       msg.showChart = true;
     } else {
       console.warn('Could not generate chart data for this table');
+      // Still show chart view even if data parsing failed - user can see the error
+      msg.showChart = false;
     }
   }
 
   parseTableForChart(index: number) {
     const msg = this.messages[index];
+    
+    // If we have results data, use it directly
+    if (msg.results && Array.isArray(msg.results) && msg.results.length > 0) {
+      this.parseResultsForChart(msg);
+      return;
+    }
+    
+    // Otherwise try to parse from markdown
     const tokens = marked.lexer(msg.text);
 
     // Recursive search for table token
@@ -329,6 +340,95 @@ export class AppComponent implements AfterViewChecked {
         borderColor: labels.map((_: any, i: number) => colors[i % colors.length].replace('0.7', '1')),
         borderWidth: 2,
         fill: false // Will be updated dynamically for area charts
+      }]
+    };
+  }
+
+  parseResultsForChart(msg: any) {
+    // Parse chart data from msg.results (structured data)
+    const results = msg.results;
+    if (!results || results.length === 0) return;
+
+    // Get column headers
+    const headers = Object.keys(results[0]);
+    if (headers.length === 0) return;
+
+    // Find the best numeric column for data
+    let dataColIndex = -1;
+    let labelColIndex = 0;
+
+    const columnScores = headers.map(() => 0);
+    for (const row of results) {
+      headers.forEach((header, i) => {
+        const val = row[header];
+        const cleanVal = String(val).replace(/[$,%]/g, '').trim();
+        if (cleanVal && !isNaN(parseFloat(cleanVal))) {
+          columnScores[i]++;
+        }
+      });
+    }
+
+    // Find the best data column (prefer rightmost numeric column, avoid ID columns)
+    for (let i = columnScores.length - 1; i >= 0; i--) {
+      if (columnScores[i] > results.length / 2) {
+        const headerLower = (headers[i] || '').toLowerCase();
+        const isId = headerLower === 'id' || headerLower.includes(' id') || headerLower.includes('id ');
+        if (!isId) {
+          dataColIndex = i;
+          break;
+        }
+      }
+    }
+
+    if (dataColIndex === -1) {
+      dataColIndex = columnScores.findIndex((s: number) => s > 0);
+    }
+
+    if (dataColIndex === -1) return; // No numeric column found
+
+    // Find label column (first non-numeric column)
+    labelColIndex = columnScores.findIndex((s: number) => s === 0);
+    if (labelColIndex === -1 || labelColIndex === dataColIndex) {
+      labelColIndex = 0;
+    }
+
+    const labels = results.map((r: any) => String(r[headers[labelColIndex]]));
+    const data = results.map((r: any) => {
+      const cleanVal = String(r[headers[dataColIndex]]).replace(/[$,%]/g, '').trim();
+      return parseFloat(cleanVal) || 0;
+    });
+
+    // Calculate total for center display
+    const total = data.reduce((sum: number, value: number) => sum + value, 0);
+    msg.chartTotal = total;
+
+    const colors = [
+      'rgba(99, 102, 241, 0.7)',   // 1. Indigo
+      'rgba(14, 165, 233, 0.7)',   // 2. Sky Blue
+      'rgba(168, 85, 247, 0.7)',   // 3. Purple
+      'rgba(236, 72, 153, 0.7)',   // 4. Pink
+      'rgba(249, 115, 22, 0.7)',   // 5. Orange
+      'rgba(34, 197, 94, 0.7)',    // 6. Green
+      'rgba(239, 68, 68, 0.7)',    // 7. Red
+      'rgba(234, 179, 8, 0.7)',    // 8. Yellow
+      'rgba(20, 184, 166, 0.7)',   // 9. Teal
+      'rgba(217, 70, 239, 0.7)',   // 10. Magenta
+      'rgba(251, 146, 60, 0.7)',   // 11. Light Orange
+      'rgba(59, 130, 246, 0.7)',   // 12. Blue
+      'rgba(139, 92, 246, 0.7)',   // 13. Violet
+      'rgba(244, 63, 94, 0.7)',    // 14. Rose
+      'rgba(16, 185, 129, 0.7)'    // 15. Emerald
+    ];
+
+    msg.chartData = {
+      labels,
+      datasets: [{
+        label: headers[dataColIndex],
+        data,
+        backgroundColor: labels.map((_: any, i: number) => colors[i % colors.length]),
+        borderColor: labels.map((_: any, i: number) => colors[i % colors.length].replace('0.7', '1')),
+        borderWidth: 2,
+        fill: false
       }]
     };
   }
