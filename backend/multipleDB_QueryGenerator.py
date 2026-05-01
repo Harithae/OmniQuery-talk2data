@@ -110,7 +110,7 @@ if __name__ == "__main__":
         - RELEVANCE RULE: If the query is completely unrelated to retail, sales, customers, inventory, or orders, return: {{"error": "This request appears to be outside my retail business domain."}}
         - Use valid SQL syntax for SQL databases (Postgres_Sales_DB, SQL_Inventory_DB).
         - For MongoDB (Mongo_Customer_DB), output a stringified JSON object exactly in this format: '{{"collection": "collection_name", "pipeline": [...]}}'
-        - IMPORTANT (MongoDB): When using a placeholder with the "$in" operator, you MUST wrap it in square brackets. Example: '{{"$match": {{"Field": {{"$in": [{{OtherDB.Field}}]}}}}}}'
+        - IMPORTANT (MongoDB): When using a placeholder with the "$in" operator, you MUST wrap the placeholder as a STRING literal inside an array. Example: '{{"$match": {{"Field": {{"$in": ["{{OtherDB.Field}}"]}}}}}}'. NEVER convert the placeholder into a JSON object (e.g., do NOT do [{{"OtherDB": "Field"}}]). It MUST remain a string like `"{{OtherDB.Field}}"`.
         - If you query the same database multiple times (e.g. for different collections or tables), give each entry a UNIQUE name in the "databases" list and "execution_order" (e.g. "Mongo_Customer_Address", "Mongo_Customer_Profile").
         - You must output ONLY valid JSON.
         - The JSON should describe a multi-step query process to answer the user's prompt.
@@ -158,6 +158,8 @@ if __name__ == "__main__":
           NEVER return only customer_id and revenue without customer names. This is a CRITICAL requirement.
         - LOCATION CONTEXT RULE: Whenever the user's prompt involves a location (e.g., searching by city, state, country, or specific places like "NY"), you MUST ensure that the location fields (such as City, State, or Country) are explicitly included in the "final_select" array and queried from the appropriate table/collection (e.g., Customer_Address).
         - SINGLE DATABASE RULE: If your query plan only involves ONE database, you MUST leave the "join.conditions" array empty (e.g., "join": {{"type": "none", "conditions": []}}). Do NOT put internal SQL joins into the JSON "join" object. The JSON "join" object is strictly when there are more than one dataset.
+        - When generating MongoDB pipeline, always perform $lookup before applying $match filters on joined collections.
+        - MONGODB PROJECTION RULE: When projecting fields from a joined collection (e.g., via $lookup), ALWAYS alias the nested fields to top-level fields in the $project stage. For example, use {{"City": "$address.City"}} instead of {{"address.City": 1}} to ensure the output is flat and matches the "final_select" keys exactly.
         
         Database Schemas:
         {schemas_json}
