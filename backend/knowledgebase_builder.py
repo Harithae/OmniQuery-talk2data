@@ -178,10 +178,10 @@ def main():
                 annotation = builder.get_llm_annotation(coll_name, coll_schema, sample_data)
                 kb["databases"][db_name]["tables"][coll_name] = annotation
 
-    with open("kb.json", "w") as f:
+    with open("DBSchemas/knowledgebase_output.json", "w") as f:
         json.dump(kb, f, indent=4)
     
-    print("Knowledge base generated and saved to kb.json")
+    print("Knowledge base generated and saved to DBSchemas/knowledgebase_output.json")
 
 if __name__ == "__main__":
     main()

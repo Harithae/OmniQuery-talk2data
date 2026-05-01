@@ -63,36 +63,34 @@ def load_schemas():
 
     compact_schema = ""
     for db_name, db_info in schemas.items():
-        compact_schema += f"\nDatabase: {db_name}\n"
+        compact_schema += f"\nDB: {db_name}\n"
         kb_db = kb_data.get(db_name, {}).get("tables", {})
         
         if "tables" in db_info:
             for table_name, table_info in db_info["tables"].items():
-                desc = kb_db.get(table_name, {}).get("table_description", "No description.")
-                compact_schema += f"  Table: {table_name} ({desc})\n"
+                desc = kb_db.get(table_name, {}).get("table_description", "")
+                desc_str = f" ({desc})" if desc and "No description" not in desc else ""
+                compact_schema += f" T: {table_name}{desc_str}\n"
                 kb_cols = kb_db.get(table_name, {}).get("columns", {})
                 for col in table_info.get("columns", []):
                     c_name = col.get("name")
-                    c_type = col.get("type")
                     c_kb = kb_cols.get(c_name, {})
-                    c_desc = c_kb.get("description", "") if isinstance(c_kb, dict) else c_kb
                     c_ex = c_kb.get("example_value") if isinstance(c_kb, dict) else None
                     ex_str = f" [Ex: {c_ex}]" if c_ex is not None else ""
-                    compact_schema += f"    - {c_name} ({c_type}): {c_desc}{ex_str}\n"
+                    compact_schema += f"  - {c_name}{ex_str}\n"
                     
         if "collections" in db_info:
             for coll_name, coll_info in db_info["collections"].items():
-                desc = kb_db.get(coll_name, {}).get("table_description", "No description.")
-                compact_schema += f"  Collection: {coll_name} ({desc})\n"
+                desc = kb_db.get(coll_name, {}).get("table_description", "")
+                desc_str = f" ({desc})" if desc and "No description" not in desc else ""
+                compact_schema += f" C: {coll_name}{desc_str}\n"
                 kb_fields = kb_db.get(coll_name, {}).get("columns", {})
                 for field in coll_info.get("fields", []):
                     f_name = field.get("name")
-                    f_type = field.get("type", "mixed")
                     f_kb = kb_fields.get(f_name, {})
-                    f_desc = f_kb.get("description", "") if isinstance(f_kb, dict) else f_kb
                     f_ex = f_kb.get("example_value") if isinstance(f_kb, dict) else None
                     ex_str = f" [Ex: {f_ex}]" if f_ex is not None else ""
-                    compact_schema += f"    - {f_name} ({f_type}): {f_desc}{ex_str}\n"
+                    compact_schema += f"  - {f_name}{ex_str}\n"
 
     return compact_schema
 
@@ -106,6 +104,7 @@ if __name__ == "__main__":
         A "meaningful" result is expected. This means the "final_select" array MUST include descriptive fields (e.g., Customer Names, Product Names) or at least the relevant IDs alongside any aggregated data (e.g., total_revenue). NEVER return a list of numbers without the context of who or what they belong to.
 
         Rules:
+        - UI CLEANLINESS RULE: In the "final_select" array, it is perfectly fine to include internal ID fields (e.g., customer_id, product_id, _id) as they will be automatically hidden in the frontend table. However, you MUST ensure that descriptive, human-readable fields (e.g., Names, Emails, Product Names) are also included whenever possible.
         - Output ONLY a JSON object. No explanation, no conversational text.
         - SECURITY RULE: You must ONLY generate SELECT queries for SQL databases. Under no circumstances should you generate queries involving INSERT, UPDATE, DELETE, DROP, ALTER, CREATE, EXEC, EXECUTE, TRUNCATE, REPLACE, GRANT, or REVOKE operations. Similarly, for MongoDB, you must only generate read operations, not $out or $merge. If the user prompt implies or requests a data modification or schema extraction, you should refuse by returning exactly: {{"error": "I'm sorry, but I can't help with that. Modifying data or extracting schema is forbidden."}}.
         - RELEVANCE RULE: If the query is completely unrelated to retail, sales, customers, inventory, or orders, return: {{"error": "This request appears to be outside my retail business domain."}}
@@ -118,9 +117,10 @@ if __name__ == "__main__":
         - IMPORTANT: The "name" field in the "databases" list MUST be exactly identical to the names listed in "execution_order" (including any _DB suffixes).
         - If a query depends on the results of another query, use a placeholder like {{DatabaseName.FieldName}} in the WHERE clause or Mongo filter.
         - Determine the correct "execution_order" array, specifying the sequence of databases to query so dependencies are resolved.
-        - CRITICAL JOIN RULE: Every query in the "databases" list MUST explicitly SELECT/project the exact columns used in "join.conditions". If you join on "Mongo_Customer_DB.Customer_ID = Postgres_Sales_DB.customer_id", then Mongo_Customer_DB MUST project "Customer_ID" and Postgres_Sales_DB MUST select "customer_id". DO NOT FORGET TO SELECT THE JOIN KEYS!
-        - FILTER-ONLY DEPENDENCIES: If a query is ONLY used to fetch IDs to filter another query (e.g., fetching CA addresses to filter sales), and you do not need to attach its columns to the final output, DO NOT include a join condition for it. The placeholder filter (`IN (...)`) is sufficient.
-        - CROSS-STEP KEY PRESERVATION: If you split a query into multiple steps (e.g., Step A gets Top Products, Step B gets Customers for those products), Step B MUST explicitly SELECT the key from Step A (e.g., `product_id`) and any other keys needed for the final join. Every table in "join.conditions" MUST have a clear join path to the other tables. If you need to show the Product Name, the aggregation step MUST NOT lose the `product_id`.
+        - MANDATORY JOIN KEYS: Every query in the "databases" list MUST explicitly SELECT/project the exact columns used in "join.conditions". For example, if you join on `SQL_Inventory_DB.Product_ID = Postgres_Sales_DB.product_id`, then SQL_Inventory_DB **MUST** select `Product_ID` and Postgres_Sales_DB **MUST** select `product_id`. Failure to select these keys makes the join impossible and is UNACCEPTABLE.
+        - COMPLETE JOIN GRAPH: You MUST include join conditions for EVERY database step that provides columns listed in "final_select". If a step is not linked in "join.conditions", its data will not be attached to the final results. Every table should be part of a single connected join path.
+        - PLACEHOLDER = JOIN: If you use a placeholder like {{StepA.Field}} in Step B's query to filter data, you ALMOST ALWAYS need a corresponding join condition: "StepA.Field = StepB.Field" to ensure the records from both databases are correctly paired in the final output.
+        - CROSS-STEP KEY PRESERVATION: If you split a query into multiple steps, every step MUST explicitly SELECT the keys needed for the next join or the final output. If you need to show the Product Name, you must join the Product table to the Sales table using the product_id.
         - JOIN NAME ACCURACY: In the "join.conditions" array, you MUST use the EXACT names you defined in the "databases" list (e.g., use "Postgres_Sales_Step1", not "Postgres_Sales_DB").
         - AGGREGATION RULE: If your query involves a JOIN with another database AND uses an aggregate function (e.g., SUM, COUNT), you ABSOLUTELY MUST include the join key in the SELECT clause AND group by it. Example: "SELECT customer_address_id, COUNT(*) FROM ... GROUP BY customer_address_id". NEVER select only the aggregate function when joining!
         - NO POST-JOIN AGGREGATION RULE: The data joiner script DOES NOT perform grouping, counting, or summing. If the user prompt requires an aggregation (like "total amount" or "count of orders"), you MUST perform that aggregation directly within your SQL or MongoDB queries. You CANNOT just select raw rows and expect the system to aggregate them later. For example, if you need a count per customer, your database query MUST include the COUNT() function and the GROUP BY clause.
@@ -131,12 +131,17 @@ if __name__ == "__main__":
         - FIELD NAME ACCURACY: MongoDB field names are CASE-SENSITIVE.
           * In the "Customer" collection, the field is "Customer_ID" (Title Case).
         - STRICT SCHEMA INTEGRITY: You MUST cross-reference every table/collection name with the provided "Database Schemas".
-        - ALIAS RULE: You MUST ALWAYS use table aliases in your SQL queries and fully qualify EVERY column name with its table alias (e.g., SELECT o.order_id, s.shipment_status FROM "Order" o JOIN shipments s ON o.order_id = s.order_id). This is critical to avoid "ambiguous column" errors when the same column name exists in multiple tables.
+        - POSTGRES RESERVED WORDS: In Postgres_Sales_DB, the table "Order" is a reserved keyword. You MUST ALWAYS surround it with double quotes: `"Order"`. Failure to do so will cause a syntax error.
+        - CRITICAL: NO AMBIGUOUS COLUMNS: Whenever you use a JOIN, you MUST prefix EVERY SINGLE column name in the entire query (SELECT, WHERE, ORDER BY, etc.) with its table alias.
+          * BAD:  `SELECT Product_ID, Product_Name FROM Product p JOIN Store_Products sp ...`
+          * GOOD: `SELECT p.Product_ID, p.Product_Name, sp.Stock_Quantity FROM Product p JOIN Store_Products sp ...`
+          * Failure to do this causes "Ambiguous Column Name" errors and is UNACCEPTABLE.
+        - ALIAS RULE: If your SQL query involves a JOIN, you MUST use table aliases (e.g., `o`, `p`, `sp`) and you MUST prefix EVERY SINGLE column name in the SELECT, WHERE, GROUP BY, and ORDER BY clauses with its respective alias (e.g., `o.order_id`, `p.Product_Name`).
           * CASE SENSITIVITY: MongoDB collection names are CASE-SENSITIVE. Use "Customer" (Singular, Title Case), NOT "customers" or "customer".
           * EXAMPLE: "order_items" and "Order" are in Postgres_Sales_DB. "Product" is in SQL_Inventory_DB.
           * WARNING: You CANNOT join "order_items" and "Product" in a single SQL query because they are in DIFFERENT databases. You must query them separately and link them using placeholders (e.g. SELECT ... FROM Product WHERE Product_ID IN ({{Postgres_Sales_DB.product_id}})).
           * SQL DIALECT WARNING: SQL_Inventory_DB is a Microsoft SQL Server database. You MUST use 'TOP' instead of 'LIMIT' (e.g., SELECT TOP 2 Product_ID ...). Postgres_Sales_DB uses LIMIT.
-        - EXPECTED DETAILS: When combining data from multiple tables (like orders, products, or customers), always retrieve basic descriptive details such as the Customer's First Name, Last Name, Email, and the Product Name whenever possible, even if not explicitly requested.
+        - EXPECTED DETAILS: When combining data from multiple tables (like orders, products, customers, customer Addresses, or stores), always retrieve basic descriptive details such as the Customer's First Name, Last Name, Email, the Product Name, and the Store Name whenever possible, even if not explicitly requested.
         - JSON STRUCTURE: The "databases" field MUST be a simple array of objects. NEVER wrap individual entries in quotes or return them as strings inside the array.
         - When there is a single query execution only from QueryExecuter.py then just return the result, no need of doing any joins.
         - Do not hallucinate columns, tables, or collections. Only use what is explicitly provided in the schema for that specific database name.
@@ -200,7 +205,7 @@ if __name__ == "__main__":
     print("Generated SQL:\n")
     print(sql_query)
 
-    with open("llm_output.json", "w") as f:
+    with open("Outputs/llm_output.json", "w") as f:
         f.write(sql_query)
         
-    print("\nSaved generated SQL to llm_output.json")
+    print("\nSaved generated SQL to Outputs/llm_output.json")

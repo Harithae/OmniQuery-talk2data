@@ -92,6 +92,15 @@ def _join_two(
     Supports: inner, left, right.
     Returns merged rows (dicts).
     """
+    # Verify keys exist
+    l_key_count = sum(1 for r in left_rows if _get_field(r, left_field) is not None)
+    r_key_count = sum(1 for r in right_rows if _get_field(r, right_field) is not None)
+    
+    if l_key_count == 0:
+        print(f"  [CRITICAL] Join key '{left_field}' missing from ALL left rows!")
+    if r_key_count == 0:
+        print(f"  [CRITICAL] Join key '{right_field}' missing from ALL right rows!")
+
     # Build lookup index on the right side
     index: dict = {}
     for row in right_rows:
@@ -163,9 +172,9 @@ def _print_table(rows: list, title: str = "", max_rows: int = 100):
 # Main join pipeline
 # ---------------------------------------------------------------------------
 def run_join(
-    plan_file: str = "llm_output.json",
-    data_file: str = "QueryOutput.json",
-    output_file: str = "FinalResult.json",
+    plan_file: str = "Outputs/llm_output.json",
+    data_file: str = "Outputs/QueryOutput.json",
+    output_file: str = "Outputs/FinalResult.json",
 ):
     plan = _load_json(plan_file)
     data = _load_json(data_file)
@@ -198,62 +207,86 @@ def run_join(
     if not conditions:
         print("\n  [INFO] No join conditions found in plan. Proceeding with single dataset.")
 
-    # ── Perform sequential joins using each LLM condition ─────────────────
+    # ── Perform robust joins using available conditions ──────────────────
     print(f"\n  Join type : {join_type.upper()}")
     print(f"  Conditions: {len(conditions)}")
     for c in conditions:
         print(f"    - {c}")
     print()
 
-    # Start with the first DB's rows, then join each subsequent condition
+    # We use a set of "available" datasets and "pending" conditions
+    available_dbs = {name: rows for name, rows in db_results.items() if rows}
+    pending_conditions = conditions[:]
+    
+    # We'll start by taking the first DB from the first condition as our starting "merged" set
     merged_rows = None
     applied_dbs = set()
 
-    for condition in conditions:
+    if pending_conditions:
+        # Initial step: try to find a starting DB
+        first_cond = pending_conditions[0]
         try:
-            left_db, left_field, right_db, right_field = _parse_condition(condition)
-        except ValueError as e:
-            print(f"  [SKIP] {e}")
-            continue
+            l_db, _, r_db, _ = _parse_condition(first_cond)
+            if l_db in available_dbs:
+                merged_rows = available_dbs[l_db][:]
+                applied_dbs.add(l_db)
+            elif r_db in available_dbs:
+                merged_rows = available_dbs[r_db][:]
+                applied_dbs.add(r_db)
+        except: pass
 
-        # Resolve left side
-        if merged_rows is None:
-            # First join: use left_db rows directly
-            left_rows = db_results.get(left_db, [])
-            applied_dbs.add(left_db)
-        else:
-            left_rows = merged_rows
+    # Iteratively apply conditions that link to our "applied_dbs" set
+    changed = True
+    while changed and pending_conditions:
+        changed = False
+        remaining = []
+        for condition in pending_conditions:
+            try:
+                l_db, l_field, r_db, r_field = _parse_condition(condition)
+                
+                # Case 1: Left is already in merged, Right is new
+                if l_db in applied_dbs and r_db in available_dbs and r_db not in applied_dbs:
+                    print(f"  Joining: {l_db}.{l_field} = {r_db}.{r_field}")
+                    merged_rows = _join_two(merged_rows, available_dbs[r_db], l_field, r_field, join_type)
+                    applied_dbs.add(r_db)
+                    changed = True
+                # Case 2: Right is already in merged, Left is new
+                elif r_db in applied_dbs and l_db in available_dbs and l_db not in applied_dbs:
+                    print(f"  Joining: {r_db}.{r_field} = {l_db}.{l_field}")
+                    merged_rows = _join_two(merged_rows, available_dbs[l_db], r_field, l_field, join_type)
+                    applied_dbs.add(l_db)
+                    changed = True
+                # Case 3: Both already in merged (redundant but possible)
+                elif l_db in applied_dbs and r_db in applied_dbs:
+                    # We could further filter here, but usually LLM uses this for multi-field joins
+                    # For now, we skip to avoid duplicating rows if not careful
+                    pass
+                else:
+                    remaining.append(condition)
+            except Exception as e:
+                print(f"  [SKIP] Error in condition '{condition}': {e}")
+        
+        pending_conditions = remaining
 
-        right_rows = db_results.get(right_db, [])
-        applied_dbs.add(right_db)
+    # If merged_rows is still None (no conditions or no matching DBs), pick the first available DB
+    if merged_rows is None:
+        for name, rows in available_dbs.items():
+            merged_rows = rows[:]
+            applied_dbs.add(name)
+            break
 
-        if not right_rows:
-            print(f"  [WARN] {right_db} returned 0 rows — skipping join condition: {condition}")
-            merged_rows = left_rows
-            continue
-
-        if not left_rows:
-            print(f"  [WARN] Left side has 0 rows — skipping join condition: {condition}")
-            merged_rows = left_rows
-            continue
-
-        print(f"  Joining on: {left_db}.{left_field} = {right_db}.{right_field}")
-        print(f"    Left  : {len(left_rows)} rows  |  Right : {len(right_rows)} rows")
-
-        merged_rows = _join_two(left_rows, right_rows, left_field, right_field, join_type)
-        print(f"    Result: {len(merged_rows)} merged rows\n")
-
-    # ── Include any DBs not referenced in conditions ───────────────────────
-    for db_name, rows in db_results.items():
-        if db_name not in applied_dbs and rows:
-            print(f"  [INFO] {db_name} not in join conditions — appending columns to result")
-            if merged_rows is not None:
+    # ── Include any remaining DBs as "islands" or fill with None ───────────
+    for db_name, rows in available_dbs.items():
+        if db_name not in applied_dbs:
+            print(f"  [INFO] {db_name} not linked in join conditions — columns will be empty for merged rows")
+            if merged_rows:
                 for row in merged_rows:
-                    for k, v in (rows[0] if rows else {}).items():
+                    for k in (rows[0] if rows else {}).keys():
                         if k not in row:
                             row[k] = None
             else:
-                merged_rows = rows
+                merged_rows = rows[:]
+                applied_dbs.add(db_name)
 
     if merged_rows is None:
         merged_rows = []
@@ -264,9 +297,10 @@ def run_join(
         for row in merged_rows:
             proj_row = {}
             for col in final_cols:
-                # case-insensitive match
+                # Use only the base name (after last dot) for the final display key
+                display_key = col.split(".")[-1]
                 val = _get_field(row, col)
-                proj_row[col] = val
+                proj_row[display_key] = val
             projected.append(proj_row)
     else:
         projected = merged_rows
@@ -293,7 +327,7 @@ def run_join(
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
     run_join(
-        plan_file="llm_output.json",
-        data_file="QueryOutput.json",
-        output_file="FinalResult.json",
+        plan_file="Outputs/llm_output.json",
+        data_file="Outputs/QueryOutput.json",
+        output_file="Outputs/FinalResult.json",
     )

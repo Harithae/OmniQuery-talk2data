@@ -1,9 +1,9 @@
 """
 QueryExecutor.py
-Reads the LLM-generated query plan from llm_output.json, executes each query
+Reads the LLM-generated query plan from Outputs/llm_output.json, executes each query
 in the order specified by 'execution_order', substitutes placeholder values
 from earlier results into dependent queries, and writes all results (labelled
-by DB name) to QueryOutput.json.
+by DB name) to Outputs/QueryOutput.json.
 """
 
 import os
@@ -294,15 +294,15 @@ def _print_table(db_name: str, rows: list, max_rows: int = 50):
         print("        " + line)
     print("        " + sep)
     if len(rows) > max_rows:
-        print(f"        ... and {len(rows) - max_rows} more rows (see QueryOutput.json for full results)")
+        print(f"        ... and {len(rows) - max_rows} more rows (see Outputs/QueryOutput.json for full results)")
     print()
 
 
 # ---------------------------------------------------------------------------
 # Main executor
 # ---------------------------------------------------------------------------
-def execute_plan(plan_file: str = "llm_output.json",
-                 output_file: str = "QueryOutput.json") -> None:
+def execute_plan(plan_file: str = "Outputs/llm_output.json",
+                 output_file: str = "Outputs/QueryOutput.json") -> None:
     with open(plan_file, "r") as f:
         plan = json.load(f)
 
@@ -399,4 +399,4 @@ def execute_plan(plan_file: str = "llm_output.json",
 
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
-    execute_plan(plan_file="llm_output.json", output_file="QueryOutput.json")
+    execute_plan(plan_file="Outputs/llm_output.json", output_file="Outputs/QueryOutput.json")

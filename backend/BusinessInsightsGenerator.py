@@ -55,7 +55,7 @@ if __name__ == "__main__":
     user_prompt = sys.argv[1]
     
     try:
-        with open("FinalResult.json", "r") as f:
+        with open("Outputs/FinalResult.json", "r") as f:
             final_data = json.load(f)
             
         results = final_data.get("results", [])
@@ -64,7 +64,7 @@ if __name__ == "__main__":
         insight = generate_insights(user_prompt, data_str)
         
         # Save to a file so master_agent can read it
-        with open("insight_output.txt", "w", encoding='utf-8') as f:
+        with open("Outputs/insight_output.txt", "w", encoding='utf-8') as f:
             f.write(insight)
             
         print("Insight generated successfully.")
