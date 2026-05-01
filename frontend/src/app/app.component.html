@@ -30,20 +30,26 @@
           <div class="message-actions" *ngIf="msg.sender === 'agent'">
             <div class="table-button-group">
               <button class="viz-btn" (click)="toggleTableOptions(i)" *ngIf="msg.results"
-                [class.active]="msg.showTableOptions && !msg.showChart && !msg.showFullResults" title="View Raw Data">
+                [class.active]="!msg.showChart && !msg.showFullResults" title="View Raw Data">
                 <span class="icon">🔢</span>
                 View Table
               </button>
 
-              <!-- View Full Results Sub-button - Only show when viewing first 10 rows and table options are open -->
+              <!-- View Full Results Sub-button - Always visible when results exist -->
               <div class="table-type-buttons"
-                *ngIf="msg.results && msg.hasMoreRows && msg.showTableOptions && !msg.showFullResults && !msg.showChart">
+                *ngIf="msg.results && msg.hasMoreRows">
                 <button class="chart-type-btn view-full-results-btn" (click)="showFullResults(i)"
-                  [class.active]="msg.showFullResults">📋 View Full Results</button>
+                  [class.active]="msg.showFullResults"
+                  [style.background]="msg.showFullResults ? '#374151' : 'rgba(255, 255, 255, 0.9)'"
+                  [style.color]="msg.showFullResults ? 'white' : '#6b7280'"
+                  [style.border]="msg.showFullResults ? '4px solid #000000' : '2px solid #d1d5db'"
+                  [style.border-radius]="'25px'">📋 View Full Results</button>
               </div>
             </div>
 
-            <button class="viz-btn" (click)="showChartView(i)" [class.active]="msg.showChart" title="Visualize Data"
+            <button class="viz-btn" (click)="showChartView(i)" [class.active]="msg.showChart" 
+              [disabled]="!msg.results || !hasNumericData(msg.results)"
+              [title]="(!msg.results || !hasNumericData(msg.results)) ? 'No numeric data available for visualization' : 'Visualize Data'"
               *ngIf="msg.hasTable">
               <span class="icon">📊</span>
               Visualize
@@ -52,13 +58,29 @@
             <!-- Chart Type Selection Buttons -->
             <div class="chart-type-buttons" *ngIf="msg.showChart">
               <button class="chart-type-btn" (click)="changeChartType(i, 'bar')"
-                [class.active]="msg.chartType === 'bar' || !msg.chartType">📊 Bar</button>
+                [ngClass]="{'active': msg.chartType === 'bar' || !msg.chartType}"
+                [style.background]="(msg.chartType === 'bar' || !msg.chartType) ? '#374151' : 'rgba(255, 255, 255, 0.9)'"
+                [style.color]="(msg.chartType === 'bar' || !msg.chartType) ? 'white' : '#6b7280'"
+                [style.border]="(msg.chartType === 'bar' || !msg.chartType) ? '4px solid #000000' : '2px solid #d1d5db'"
+                [style.border-radius]="'25px'">📊 Bar</button>
               <button class="chart-type-btn" (click)="changeChartType(i, 'horizontalBar')"
-                [class.active]="msg.chartType === 'horizontalBar'">📋 H-Bar</button>
+                [ngClass]="{'active': msg.chartType === 'horizontalBar'}"
+                [style.background]="msg.chartType === 'horizontalBar' ? '#374151' : 'rgba(255, 255, 255, 0.9)'"
+                [style.color]="msg.chartType === 'horizontalBar' ? 'white' : '#6b7280'"
+                [style.border]="msg.chartType === 'horizontalBar' ? '4px solid #000000' : '2px solid #d1d5db'"
+                [style.border-radius]="'25px'">📋 H-Bar</button>
               <button class="chart-type-btn" (click)="changeChartType(i, 'line')"
-                [class.active]="msg.chartType === 'line'">📈 Line</button>
+                [ngClass]="{'active': msg.chartType === 'line'}"
+                [style.background]="msg.chartType === 'line' ? '#374151' : 'rgba(255, 255, 255, 0.9)'"
+                [style.color]="msg.chartType === 'line' ? 'white' : '#6b7280'"
+                [style.border]="msg.chartType === 'line' ? '4px solid #000000' : '2px solid #d1d5db'"
+                [style.border-radius]="'25px'">📈 Line</button>
               <button class="chart-type-btn" (click)="changeChartType(i, 'doughnut')"
-                [class.active]="msg.chartType === 'doughnut'">🍩 Doughnut</button>
+                [ngClass]="{'active': msg.chartType === 'doughnut'}"
+                [style.background]="msg.chartType === 'doughnut' ? '#374151' : 'rgba(255, 255, 255, 0.9)'"
+                [style.color]="msg.chartType === 'doughnut' ? 'white' : '#6b7280'"
+                [style.border]="msg.chartType === 'doughnut' ? '4px solid #000000' : '2px solid #d1d5db'"
+                [style.border-radius]="'25px'">🍩 Doughnut</button>
             </div>
 
             <!-- Zoom Controls -->
@@ -158,11 +180,19 @@
             </div>
           </div>
 
-          <div class="insight-container" *ngIf="msg.insight" [innerHTML]="msg.insight | markdown"
-            style="margin-top: 15px; padding: 15px; background-color: rgba(99, 102, 241, 0.05); border-left: 4px solid #000000; border-radius: 6px; font-size: 0.95em; color: #334155; line-height: 1.5;">
+          <div class="insight-container" *ngIf="msg.insight"
+            style="margin-top: 15px; padding: 15px; background-color: rgba(99, 102, 241, 0.05); border-left: 4px solid #000000; border-radius: 6px; font-size: 0.95em; color: #334155; line-height: 1.6;">
+            <h4 style="margin: 0 0 1rem 0; color: #1e293b; font-size: 1.05em; font-weight: 700;">Business Insights</h4>
+            
+            <div *ngIf="parseInsight(msg.insight).aiInsight" class="insight-section">
+              <p style="margin: 0 0 0.5rem 0;"><strong style="color: #1e293b;">AI Insight:</strong> {{ parseInsight(msg.insight).aiInsight }}</p>
+            </div>
+            
+            <div *ngIf="parseInsight(msg.insight).actionableItem" class="insight-section" style="margin-top: 1rem; padding-top: 1rem;">
+              <p style="margin: 0;"><strong style="color: #1e293b;">Actionable Item:</strong> {{ parseInsight(msg.insight).actionableItem }}</p>
+            </div>
           </div>
 
-          <div class="message-meta" *ngIf="msg.text">{{ msg.timestamp | date:'shortTime' }}</div>
         </div>
       </div>
       <!-- Progress / Loading Indicator -->

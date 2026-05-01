@@ -1,4 +1,4 @@
-import { Component, AfterViewChecked, ElementRef, ViewChildren, QueryList, Pipe, PipeTransform } from '@angular/core';
+import { Component, AfterViewChecked, ElementRef, ViewChildren, QueryList, Pipe, PipeTransform, ChangeDetectorRef, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
@@ -59,7 +59,8 @@ interface Message {
   standalone: true,
   imports: [CommonModule, FormsModule, MarkdownPipe],
   templateUrl: './app.component.html',
-  styleUrl: './app.component.scss'
+  styleUrl: './app.component.scss',
+  changeDetection: ChangeDetectionStrategy.Default
 })
 export class AppComponent implements AfterViewChecked {
   title = 'Multi-DB AI Chat';
@@ -83,7 +84,7 @@ export class AppComponent implements AfterViewChecked {
 
   @ViewChildren('chartCanvas') chartCanvases!: QueryList<ElementRef<HTMLCanvasElement>>;
 
-  constructor(private chatService: ChatService, private sanitizer: DomSanitizer) { }
+  constructor(private chatService: ChatService, private sanitizer: DomSanitizer, private cdr: ChangeDetectorRef) { }
 
   ngAfterViewChecked() {
     this.messages.forEach((msg, index) => {
@@ -209,6 +210,11 @@ export class AppComponent implements AfterViewChecked {
     // Reset table options when switching to chart
     msg.showTableOptions = false;
     msg.showFullResults = false;
+    
+    // Initialize chartType to 'bar' if not already set
+    if (!msg.chartType) {
+      msg.chartType = 'bar';
+    }
     
     // Try to parse if not already parsed
     if (!msg.chartData && msg.results) {
@@ -349,8 +355,12 @@ export class AppComponent implements AfterViewChecked {
     const results = msg.results;
     if (!results || results.length === 0) return;
 
+    // Determine how many rows to use for chart
+    // If showing full results, use all data; otherwise use first 10
+    const dataToChart = msg.showFullResults ? results : results.slice(0, 10);
+
     // Get column headers
-    const headers = Object.keys(results[0]);
+    const headers = Object.keys(dataToChart[0]);
     if (headers.length === 0) return;
 
     // Find the best numeric column for data
@@ -358,7 +368,7 @@ export class AppComponent implements AfterViewChecked {
     let labelColIndex = 0;
 
     const columnScores = headers.map(() => 0);
-    for (const row of results) {
+    for (const row of dataToChart) {
       headers.forEach((header, i) => {
         const val = row[header];
         const cleanVal = String(val).replace(/[$,%]/g, '').trim();
@@ -370,7 +380,7 @@ export class AppComponent implements AfterViewChecked {
 
     // Find the best data column (prefer rightmost numeric column, avoid ID columns)
     for (let i = columnScores.length - 1; i >= 0; i--) {
-      if (columnScores[i] > results.length / 2) {
+      if (columnScores[i] > dataToChart.length / 2) {
         const headerLower = (headers[i] || '').toLowerCase();
         const isId = headerLower === 'id' || headerLower.includes(' id') || headerLower.includes('id ');
         if (!isId) {
@@ -392,8 +402,8 @@ export class AppComponent implements AfterViewChecked {
       labelColIndex = 0;
     }
 
-    const labels = results.map((r: any) => String(r[headers[labelColIndex]]));
-    const data = results.map((r: any) => {
+    const labels = dataToChart.map((r: any) => String(r[headers[labelColIndex]]));
+    const data = dataToChart.map((r: any) => {
       const cleanVal = String(r[headers[dataColIndex]]).replace(/[$,%]/g, '').trim();
       return parseFloat(cleanVal) || 0;
     });
@@ -470,21 +480,34 @@ export class AppComponent implements AfterViewChecked {
   changeChartType(index: number, chartType: 'bar' | 'line' | 'doughnut' | 'horizontalBar') {
     const msg = this.messages[index];
     
-    // Destroy existing chart instance
+    // Destroy existing chart instance completely
     if (msg.chartInstance) {
-      msg.chartInstance.destroy();
-      msg.chartInstance = null;
+      try {
+        msg.chartInstance.destroy();
+        msg.chartInstance = null;
+      } catch (e) {
+        console.error('Error destroying chart:', e);
+      }
     }
     
+    // Set the new chart type
     msg.chartType = chartType;
+    console.log('Chart type set to:', msg.chartType);
+    
+    // Force Angular to detect changes immediately
+    this.cdr.detectChanges();
     
     // Update chart data for the new type
     this.updateChartDataForType(msg, chartType);
     
-    // Use a longer timeout to ensure Angular has updated the view
+    // Wait for DOM to settle, then recreate chart
     setTimeout(() => {
-      this.initChart(index);
-    }, 50);
+      try {
+        this.initChart(index);
+      } catch (e) {
+        console.error('Error initializing chart:', e);
+      }
+    }, 200);
   }
 
   zoomChart(index: number, direction: 'in' | 'out') {
@@ -499,10 +522,14 @@ export class AppComponent implements AfterViewChecked {
     
     // Recreate chart with new zoom
     if (msg.chartInstance) {
-      msg.chartInstance.destroy();
-      msg.chartInstance = null;
+      try {
+        msg.chartInstance.destroy();
+        msg.chartInstance = null;
+      } catch (e) {
+        console.error('Error destroying chart:', e);
+      }
     }
-    setTimeout(() => this.initChart(index), 50);
+    setTimeout(() => this.initChart(index), 200);
   }
 
   resetZoom(index: number) {
@@ -510,10 +537,14 @@ export class AppComponent implements AfterViewChecked {
     msg.chartZoom = 1;
     
     if (msg.chartInstance) {
-      msg.chartInstance.destroy();
-      msg.chartInstance = null;
+      try {
+        msg.chartInstance.destroy();
+        msg.chartInstance = null;
+      } catch (e) {
+        console.error('Error destroying chart:', e);
+      }
     }
-    setTimeout(() => this.initChart(index), 50);
+    setTimeout(() => this.initChart(index), 200);
   }
 
   initChart(index: number) {
@@ -530,6 +561,16 @@ export class AppComponent implements AfterViewChecked {
     if (!msg.chartData) {
       console.warn('No chart data available');
       return;
+    }
+
+    // Make absolutely sure no chart exists on this canvas
+    if (msg.chartInstance) {
+      try {
+        msg.chartInstance.destroy();
+        msg.chartInstance = null;
+      } catch (e) {
+        console.error('Error destroying chart before init:', e);
+      }
     }
 
     // Handle chart type mapping
@@ -855,5 +896,37 @@ export class AppComponent implements AfterViewChecked {
       }
     }, 100);
   }
-}
 
+  parseInsight(insightText: string): { aiInsight: string; actionableItem: string } {
+    if (!insightText) return { aiInsight: '', actionableItem: '' };
+    
+    // Match "AI Insight: ..." and "Actionable Item: ..."
+    const aiInsightMatch = insightText.match(/AI Insight:\s*([^\n]*(?:\n(?!Actionable Item:)[^\n]*)*)/i);
+    const actionableItemMatch = insightText.match(/Actionable Item:\s*([^\n]*(?:\n(?!AI Insight:)[^\n]*)*)/i);
+
+    return {
+      aiInsight: aiInsightMatch ? aiInsightMatch[1].trim() : '',
+      actionableItem: actionableItemMatch ? actionableItemMatch[1].trim() : ''
+    };
+  }
+
+  hasNumericData(results: any[]): boolean {
+    if (!results || results.length === 0) return false;
+
+    const headers = Object.keys(results[0]);
+    if (headers.length === 0) return false;
+
+    // Check if at least one column has numeric data
+    for (const row of results) {
+      for (const header of headers) {
+        const val = row[header];
+        const cleanVal = String(val).replace(/[$,%]/g, '').trim();
+        if (cleanVal && !isNaN(parseFloat(cleanVal))) {
+          return true; // Found at least one numeric value
+        }
+      }
+    }
+
+    return false; // No numeric data found
+  }
+}
