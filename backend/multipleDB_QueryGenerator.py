@@ -143,6 +143,8 @@ if __name__ == "__main__":
           * BAD:  `SELECT ... FROM PostgresDB.Table p JOIN MongoDB.Collection m ...` (Impossible)
           * GOOD: Step 1: Query Postgres. Step 2: Query Mongo. Let the "join.conditions" link them.
           * The "DataJoiner" script is the ONLY component that performs cross-database joins. Do not attempt to do it in SQL.
+        - NO PLACEHOLDERS IN SELECT: You MUST NEVER put a placeholder like {{OtherDB.Field}} in the SELECT clause. Placeholders are ONLY for filtering in the WHERE clause (e.g. WHERE id IN ({{OtherDB.id}})).
+        - STRICT DATABASE BOUNDARIES: You CANNOT JOIN tables from SQL_Inventory_DB inside the Postgres_Sales_DB query. For example, "Store" and "Store_Products" are in SQL_Inventory_DB, so they CANNOT be queried or joined in Postgres_Sales_DB. Query them separately and link them via "join.conditions".
         - WARNING: You CANNOT join "order_items" and "Product" in a single SQL query because they are in DIFFERENT databases. You must query them separately and link them using placeholders (e.g. SELECT ... FROM Product WHERE Product_ID IN ({{Postgres_Sales_DB.product_id}})).
           * SQL DIALECT WARNING: SQL_Inventory_DB is a Microsoft SQL Server database. You MUST use 'TOP' instead of 'LIMIT' (e.g., SELECT TOP 2 Product_ID ...). Postgres_Sales_DB uses LIMIT.
         - EXPECTED DETAILS: When combining data from multiple tables (like orders, products, customers, customer Addresses, or stores), always retrieve basic descriptive details such as the Customer's First Name, Last Name, Email, the Product Name, and the Store Name whenever possible, even if not explicitly requested.

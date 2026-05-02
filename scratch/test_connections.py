@@ -14,7 +14,8 @@ import sys
 
 # Load .env from the backend folder
 from dotenv import load_dotenv
-load_dotenv(dotenv_path="backend/.env", override=True)
+env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "backend", ".env")
+load_dotenv(dotenv_path=env_path, override=True)
 
 # Force UTF-8 output on Windows
 if sys.stdout.encoding and sys.stdout.encoding.lower() != "utf-8":
