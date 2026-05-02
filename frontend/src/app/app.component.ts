@@ -836,10 +836,17 @@ export class AppComponent implements AfterViewChecked {
             } else if (data.type === 'tool_start') {
               this.currentStatus = `Searching ${data.tool}...`;
             } else if (data.type === 'tool_end') {
-              this.currentStatus = '';
+              // Keep status visible for 500ms before clearing
+              setTimeout(() => {
+                this.currentStatus = '';
+              }, 500);
             } else if (data.type === 'result') {
               // Store the final result set
               agentMessage.results = data.content;
+              // DEBUG: Log the actual API response
+              console.log('API Response - First row:', data.content[0]);
+              console.log('API Response - All columns:', Object.keys(data.content[0]));
+              console.log('API Response - Full data:', data.content);
               // Check if there are more than 10 rows
               agentMessage.hasMoreRows = data.content && data.content.length > 10;
             } else if (data.type === 'error') {
@@ -915,15 +922,38 @@ export class AppComponent implements AfterViewChecked {
   getColumnKey(results: any[], displayName: string): string {
     if (!results || results.length === 0) return displayName;
     const columns = Object.keys(results[0]);
-    // Find the original column name that matches the display name
-    return columns.find(col => {
+    
+    // First try: exact match with formatting
+    const exactMatch = columns.find(col => {
       const formatted = col
         .replace(/_/g, ' ')
         .split(' ')
         .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
         .join(' ');
       return formatted === displayName;
-    }) || displayName;
+    });
+    
+    if (exactMatch) return exactMatch;
+    
+    // Second try: case-insensitive match
+    const caseInsensitiveMatch = columns.find(col => {
+      const formatted = col
+        .replace(/_/g, ' ')
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join(' ');
+      return formatted.toLowerCase() === displayName.toLowerCase();
+    });
+    
+    if (caseInsensitiveMatch) return caseInsensitiveMatch;
+    
+    // Third try: direct column name match (in case display name is same as column name)
+    const directMatch = columns.find(col => col === displayName);
+    if (directMatch) return directMatch;
+    
+    // Fallback: return display name (will likely fail, but better than nothing)
+    console.warn(`Column key not found for display name: ${displayName}. Available columns:`, columns);
+    return displayName;
   }
 
   scrollToBottom() {

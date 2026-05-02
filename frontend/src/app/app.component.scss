@@ -659,7 +659,6 @@ header {
         border: none;
         border-right: 1px solid #e5e7eb;
         position: relative;
-        overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
         word-break: normal;
@@ -768,7 +767,6 @@ header {
         background: inherit !important;
         border-right: 1px solid #e5e7eb;
         white-space: nowrap;
-        overflow: hidden;
         text-overflow: ellipsis;
         padding: 0.75rem 1rem;
       }
