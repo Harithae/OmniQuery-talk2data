@@ -406,6 +406,7 @@ def execute_plan(plan_file: str = "Outputs/llm_output.json",
         _print_table(db_name, rows)
 
     # Write combined output
+    os.makedirs(os.path.dirname(output_file) or ".", exist_ok=True)
     with open(output_file, "w", encoding="utf-8") as f:
         json.dump(output, f, indent=4, cls=_Encoder)
 

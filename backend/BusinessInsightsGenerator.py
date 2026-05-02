@@ -64,6 +64,7 @@ if __name__ == "__main__":
         insight = generate_insights(user_prompt, data_str)
         
         # Save to a file so master_agent can read it
+        os.makedirs(os.path.dirname("Outputs/insight_output.txt") or ".", exist_ok=True)
         with open("Outputs/insight_output.txt", "w", encoding='utf-8') as f:
             f.write(insight)
             

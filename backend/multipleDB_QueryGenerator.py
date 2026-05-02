@@ -216,6 +216,7 @@ if __name__ == "__main__":
     print("Generated SQL:\n")
     print(sql_query)
 
+    os.makedirs("Outputs", exist_ok=True)
     with open("Outputs/llm_output.json", "w") as f:
         f.write(sql_query)
         

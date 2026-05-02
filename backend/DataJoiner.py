@@ -8,6 +8,7 @@ final merged result to the screen in a formatted table.
 import json
 import re
 import sys
+import os
 from datetime import date, datetime
 
 # Force UTF-8 on Windows console
@@ -312,6 +313,7 @@ def run_join(
     )
 
     # ── Save to file ───────────────────────────────────────────────────────
+    os.makedirs(os.path.dirname(output_file) or ".", exist_ok=True)
     with open(output_file, "w", encoding="utf-8") as f:
         json.dump(
             {"join_type": join_type if conditions else "none", "conditions": conditions,
