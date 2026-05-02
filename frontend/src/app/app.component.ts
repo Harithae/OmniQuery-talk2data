@@ -836,17 +836,13 @@ export class AppComponent implements AfterViewChecked {
             } else if (data.type === 'tool_start') {
               this.currentStatus = `Searching ${data.tool}...`;
             } else if (data.type === 'tool_end') {
-              // Keep status visible for 500ms before clearing
+              // Keep status visible for 1000ms before clearing
               setTimeout(() => {
                 this.currentStatus = '';
-              }, 500);
+              }, 1000);
             } else if (data.type === 'result') {
               // Store the final result set
               agentMessage.results = data.content;
-              // DEBUG: Log the actual API response
-              console.log('API Response - First row:', data.content[0]);
-              console.log('API Response - All columns:', Object.keys(data.content[0]));
-              console.log('API Response - Full data:', data.content);
               // Check if there are more than 10 rows
               agentMessage.hasMoreRows = data.content && data.content.length > 10;
             } else if (data.type === 'error') {

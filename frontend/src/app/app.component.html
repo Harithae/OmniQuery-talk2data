@@ -259,14 +259,9 @@
       <!-- Progress / Loading Indicator -->
       <div *ngIf="isLoading" class="message-wrapper">
         <div class="message-bubble agent-progress">
-          <div *ngIf="currentStatus" class="status-content">
+          <div class="status-content">
             <div class="spinner"></div>
-            <span>{{ currentStatus }}</span>
-          </div>
-          <div *ngIf="!currentStatus" class="typing-indicator">
-            <span></span>
-            <span></span>
-            <span></span>
+            <span>{{ currentStatus || 'Agent is thinking...' }}</span>
           </div>
         </div>
       </div>
