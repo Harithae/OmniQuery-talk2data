@@ -1,4 +1,4 @@
-import { Component, AfterViewChecked, ElementRef, ViewChildren, QueryList, Pipe, PipeTransform } from '@angular/core';
+import { Component, AfterViewChecked, ElementRef, ViewChildren, QueryList, Pipe, PipeTransform, ChangeDetectorRef, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
@@ -52,6 +52,8 @@ interface Message {
   showTableOptions?: boolean;
   columnWidths?: number[];
   insight?: string;
+  sortColumn?: string;
+  sortDirection?: 'asc' | 'desc';
 }
 
 @Component({
@@ -59,7 +61,8 @@ interface Message {
   standalone: true,
   imports: [CommonModule, FormsModule, MarkdownPipe],
   templateUrl: './app.component.html',
-  styleUrl: './app.component.scss'
+  styleUrl: './app.component.scss',
+  changeDetection: ChangeDetectionStrategy.Default
 })
 export class AppComponent implements AfterViewChecked {
   title = 'Multi-DB AI Chat';
@@ -73,6 +76,30 @@ export class AppComponent implements AfterViewChecked {
   ];
   isLoading = false;
   currentStatus = '';
+  showQueryHistory = false;
+  queryHistory: string[] = [];
+  sidebarOpen = false;
+  filteredHistory: string[] = [];
+  historySearchTerm = '';
+
+  // Consistent color palette for all charts
+  chartColors = [
+    'rgba(99, 102, 241, 0.7)',     // 1. Indigo
+    'rgba(14, 165, 233, 0.7)',     // 2. Sky Blue
+    'rgba(168, 85, 247, 0.7)',     // 3. Purple
+    'rgba(236, 72, 153, 0.7)',     // 4. Pink
+    'rgba(249, 115, 22, 0.7)',     // 5. Orange
+    'rgba(34, 197, 94, 0.7)',      // 6. Green
+    'rgba(239, 68, 68, 0.7)',      // 7. Red
+    'rgba(234, 179, 8, 0.7)',      // 8. Yellow
+    'rgba(20, 184, 166, 0.7)',     // 9. Teal
+    'rgba(217, 70, 239, 0.7)',     // 10. Magenta
+    'rgba(251, 146, 60, 0.7)',     // 11. Light Orange
+    'rgba(59, 130, 246, 0.7)',     // 12. Blue
+    'rgba(139, 92, 246, 0.7)',     // 13. Violet
+    'rgba(244, 63, 94, 0.7)',      // 14. Rose
+    'rgba(16, 185, 129, 0.7)'      // 15. Emerald
+  ];
 
   // Column resizing properties
   isResizing = false;
@@ -83,7 +110,9 @@ export class AppComponent implements AfterViewChecked {
 
   @ViewChildren('chartCanvas') chartCanvases!: QueryList<ElementRef<HTMLCanvasElement>>;
 
-  constructor(private chatService: ChatService, private sanitizer: DomSanitizer) { }
+  constructor(private chatService: ChatService, private sanitizer: DomSanitizer, private cdr: ChangeDetectorRef) { 
+    this.filteredHistory = [...this.queryHistory];
+  }
 
   ngAfterViewChecked() {
     this.messages.forEach((msg, index) => {
@@ -210,21 +239,37 @@ export class AppComponent implements AfterViewChecked {
     msg.showTableOptions = false;
     msg.showFullResults = false;
     
+    // Initialize chartType to 'bar' if not already set
+    if (!msg.chartType) {
+      msg.chartType = 'bar';
+    }
+    
     // Try to parse if not already parsed
-    if (!msg.chartData) {
+    if (!msg.chartData && msg.results) {
+      // If we have results data, use it directly instead of parsing markdown
       this.parseTableForChart(index);
     }
 
     // Only show if we actually have data
-    if (msg.chartData && msg.chartData.labels.length > 0) {
+    if (msg.chartData && msg.chartData.labels && msg.chartData.labels.length > 0) {
       msg.showChart = true;
     } else {
       console.warn('Could not generate chart data for this table');
+      // Still show chart view even if data parsing failed - user can see the error
+      msg.showChart = false;
     }
   }
 
   parseTableForChart(index: number) {
     const msg = this.messages[index];
+    
+    // If we have results data, use it directly
+    if (msg.results && Array.isArray(msg.results) && msg.results.length > 0) {
+      this.parseResultsForChart(msg);
+      return;
+    }
+    
+    // Otherwise try to parse from markdown
     const tokens = marked.lexer(msg.text);
 
     // Recursive search for table token
@@ -302,33 +347,90 @@ export class AppComponent implements AfterViewChecked {
     const total = data.reduce((sum: number, value: number) => sum + value, 0);
     msg.chartTotal = total;
 
-    const colors = [
-      'rgba(99, 102, 241, 0.7)',   // 1. Indigo
-      'rgba(14, 165, 233, 0.7)',   // 2. Sky Blue
-      'rgba(168, 85, 247, 0.7)',   // 3. Purple
-      'rgba(236, 72, 153, 0.7)',   // 4. Pink
-      'rgba(249, 115, 22, 0.7)',   // 5. Orange
-      'rgba(34, 197, 94, 0.7)',    // 6. Green
-      'rgba(239, 68, 68, 0.7)',    // 7. Red
-      'rgba(234, 179, 8, 0.7)',    // 8. Yellow
-      'rgba(20, 184, 166, 0.7)',   // 9. Teal
-      'rgba(217, 70, 239, 0.7)',   // 10. Magenta
-      'rgba(251, 146, 60, 0.7)',   // 11. Light Orange
-      'rgba(59, 130, 246, 0.7)',   // 12. Blue
-      'rgba(139, 92, 246, 0.7)',   // 13. Violet
-      'rgba(244, 63, 94, 0.7)',    // 14. Rose
-      'rgba(16, 185, 129, 0.7)'    // 15. Emerald
-    ];
+    msg.chartData = {
+      labels,
+      datasets: [{
+        label: headers[dataColIndex],
+        data,
+        backgroundColor: labels.map((_: any, i: number) => this.chartColors[i % this.chartColors.length]),
+        borderColor: labels.map((_: any, i: number) => this.chartColors[i % this.chartColors.length].replace('0.7', '1')),
+        borderWidth: 2,
+        fill: false // Will be updated dynamically for area charts
+      }]
+    };
+  }
+
+  parseResultsForChart(msg: any) {
+    // Parse chart data from msg.results (structured data)
+    const results = msg.results;
+    if (!results || results.length === 0) return;
+
+    // Determine how many rows to use for chart
+    // If showing full results, use all data; otherwise use first 10
+    const dataToChart = msg.showFullResults ? results : results.slice(0, 10);
+
+    // Get column headers
+    const headers = Object.keys(dataToChart[0]);
+    if (headers.length === 0) return;
+
+    // Find the best numeric column for data
+    let dataColIndex = -1;
+    let labelColIndex = 0;
+
+    const columnScores = headers.map(() => 0);
+    for (const row of dataToChart) {
+      headers.forEach((header, i) => {
+        const val = row[header];
+        const cleanVal = String(val).replace(/[$,%]/g, '').trim();
+        if (cleanVal && !isNaN(parseFloat(cleanVal))) {
+          columnScores[i]++;
+        }
+      });
+    }
+
+    // Find the best data column (prefer rightmost numeric column, avoid ID columns)
+    for (let i = columnScores.length - 1; i >= 0; i--) {
+      if (columnScores[i] > dataToChart.length / 2) {
+        const headerLower = (headers[i] || '').toLowerCase();
+        const isId = headerLower === 'id' || headerLower.includes(' id') || headerLower.includes('id ');
+        if (!isId) {
+          dataColIndex = i;
+          break;
+        }
+      }
+    }
+
+    if (dataColIndex === -1) {
+      dataColIndex = columnScores.findIndex((s: number) => s > 0);
+    }
+
+    if (dataColIndex === -1) return; // No numeric column found
+
+    // Find label column (first non-numeric column)
+    labelColIndex = columnScores.findIndex((s: number) => s === 0);
+    if (labelColIndex === -1 || labelColIndex === dataColIndex) {
+      labelColIndex = 0;
+    }
+
+    const labels = dataToChart.map((r: any) => String(r[headers[labelColIndex]]));
+    const data = dataToChart.map((r: any) => {
+      const cleanVal = String(r[headers[dataColIndex]]).replace(/[$,%]/g, '').trim();
+      return parseFloat(cleanVal) || 0;
+    });
+
+    // Calculate total for center display
+    const total = data.reduce((sum: number, value: number) => sum + value, 0);
+    msg.chartTotal = total;
 
     msg.chartData = {
       labels,
       datasets: [{
         label: headers[dataColIndex],
         data,
-        backgroundColor: labels.map((_: any, i: number) => colors[i % colors.length]),
-        borderColor: labels.map((_: any, i: number) => colors[i % colors.length].replace('0.7', '1')),
+        backgroundColor: labels.map((_: any, i: number) => this.chartColors[i % this.chartColors.length]),
+        borderColor: labels.map((_: any, i: number) => this.chartColors[i % this.chartColors.length].replace('0.7', '1')),
         borderWidth: 2,
-        fill: false // Will be updated dynamically for area charts
+        fill: false
       }]
     };
   }
@@ -343,26 +445,9 @@ export class AppComponent implements AfterViewChecked {
       dataset.backgroundColor = 'transparent';
       dataset.tension = 0.1;
     } else {
-      // Reset to original colors for bar charts
-      const colors = [
-        'rgba(99, 102, 241, 0.7)',   // 1. Indigo
-        'rgba(14, 165, 233, 0.7)',   // 2. Sky Blue
-        'rgba(168, 85, 247, 0.7)',   // 3. Purple
-        'rgba(236, 72, 153, 0.7)',   // 4. Pink
-        'rgba(249, 115, 22, 0.7)',   // 5. Orange
-        'rgba(34, 197, 94, 0.7)',    // 6. Green
-        'rgba(239, 68, 68, 0.7)',    // 7. Red
-        'rgba(234, 179, 8, 0.7)',    // 8. Yellow
-        'rgba(20, 184, 166, 0.7)',   // 9. Teal
-        'rgba(217, 70, 239, 0.7)',   // 10. Magenta
-        'rgba(251, 146, 60, 0.7)',   // 11. Light Orange
-        'rgba(59, 130, 246, 0.7)',   // 12. Blue
-        'rgba(139, 92, 246, 0.7)',   // 13. Violet
-        'rgba(244, 63, 94, 0.7)',    // 14. Rose
-        'rgba(16, 185, 129, 0.7)'    // 15. Emerald
-      ];
-      dataset.backgroundColor = msg.chartData.labels.map((_: any, i: number) => colors[i % colors.length]);
-      dataset.borderColor = msg.chartData.labels.map((_: any, i: number) => colors[i % colors.length].replace('0.7', '1'));
+      // Reset to consistent color palette for bar charts
+      dataset.backgroundColor = msg.chartData.labels.map((_: any, i: number) => this.chartColors[i % this.chartColors.length]);
+      dataset.borderColor = msg.chartData.labels.map((_: any, i: number) => this.chartColors[i % this.chartColors.length].replace('0.7', '1'));
       dataset.fill = false;
     }
   }
@@ -370,21 +455,34 @@ export class AppComponent implements AfterViewChecked {
   changeChartType(index: number, chartType: 'bar' | 'line' | 'doughnut' | 'horizontalBar') {
     const msg = this.messages[index];
     
-    // Destroy existing chart instance
+    // Destroy existing chart instance completely
     if (msg.chartInstance) {
-      msg.chartInstance.destroy();
-      msg.chartInstance = null;
+      try {
+        msg.chartInstance.destroy();
+        msg.chartInstance = null;
+      } catch (e) {
+        console.error('Error destroying chart:', e);
+      }
     }
     
+    // Set the new chart type
     msg.chartType = chartType;
+    console.log('Chart type set to:', msg.chartType);
+    
+    // Force Angular to detect changes immediately
+    this.cdr.detectChanges();
     
     // Update chart data for the new type
     this.updateChartDataForType(msg, chartType);
     
-    // Use a longer timeout to ensure Angular has updated the view
+    // Wait for DOM to settle, then recreate chart
     setTimeout(() => {
-      this.initChart(index);
-    }, 50);
+      try {
+        this.initChart(index);
+      } catch (e) {
+        console.error('Error initializing chart:', e);
+      }
+    }, 200);
   }
 
   zoomChart(index: number, direction: 'in' | 'out') {
@@ -399,10 +497,14 @@ export class AppComponent implements AfterViewChecked {
     
     // Recreate chart with new zoom
     if (msg.chartInstance) {
-      msg.chartInstance.destroy();
-      msg.chartInstance = null;
+      try {
+        msg.chartInstance.destroy();
+        msg.chartInstance = null;
+      } catch (e) {
+        console.error('Error destroying chart:', e);
+      }
     }
-    setTimeout(() => this.initChart(index), 50);
+    setTimeout(() => this.initChart(index), 200);
   }
 
   resetZoom(index: number) {
@@ -410,10 +512,14 @@ export class AppComponent implements AfterViewChecked {
     msg.chartZoom = 1;
     
     if (msg.chartInstance) {
-      msg.chartInstance.destroy();
-      msg.chartInstance = null;
+      try {
+        msg.chartInstance.destroy();
+        msg.chartInstance = null;
+      } catch (e) {
+        console.error('Error destroying chart:', e);
+      }
     }
-    setTimeout(() => this.initChart(index), 50);
+    setTimeout(() => this.initChart(index), 200);
   }
 
   initChart(index: number) {
@@ -430,6 +536,16 @@ export class AppComponent implements AfterViewChecked {
     if (!msg.chartData) {
       console.warn('No chart data available');
       return;
+    }
+
+    // Make absolutely sure no chart exists on this canvas
+    if (msg.chartInstance) {
+      try {
+        msg.chartInstance.destroy();
+        msg.chartInstance = null;
+      } catch (e) {
+        console.error('Error destroying chart before init:', e);
+      }
     }
 
     // Handle chart type mapping
@@ -466,7 +582,8 @@ export class AppComponent implements AfterViewChecked {
           const centerY = (chartArea.top + chartArea.bottom) / 2;
           
           ctx.save();
-          const text = msg.chartTotal.toString();
+          // Restrict to 2 decimal places
+          const text = msg.chartTotal.toFixed(2);
           
           let fontSize = 40;
           if (text.length > 8) {
@@ -503,10 +620,13 @@ export class AppComponent implements AfterViewChecked {
         const meta = chart.getDatasetMeta(0);
         const total = data.datasets[0].data.reduce((a: number, b: number) => a + b, 0);
         
+        // Calculate label positions to avoid overlaps
+        const labelPositions: any[] = [];
+        
         meta.data.forEach((arc: any, index: number) => {
           const label = data.labels[index];
           const value = data.datasets[0].data[index];
-          const percentage = ((value / total) * 100).toFixed(2);
+          const percentage = ((value / total) * 100).toFixed(1);
           
           // Calculate angle for this segment
           const angle = (arc.startAngle + arc.endAngle) / 2;
@@ -516,36 +636,74 @@ export class AppComponent implements AfterViewChecked {
           const y1 = centerY + Math.sin(angle) * (radius * 0.85);
           
           // Extended point for the line
-          const lineLength = 30;
+          const lineLength = 40;
           const x2 = centerX + Math.cos(angle) * (radius * 0.85 + lineLength);
           const y2 = centerY + Math.sin(angle) * (radius * 0.85 + lineLength);
           
-          // Horizontal line extension
-          const horizontalLength = 40;
+          // Horizontal line extension with more space
+          const horizontalLength = 60;
           const x3 = x2 + (Math.cos(angle) > 0 ? horizontalLength : -horizontalLength);
           const y3 = y2;
           
+          const text = `${label} - ${percentage}%`;
+          
+          labelPositions.push({
+            text,
+            x1, y1, x2, y2, x3, y3,
+            angle,
+            index
+          });
+        });
+        
+        // Adjust overlapping labels vertically
+        const minVerticalGap = 25;
+        for (let i = 0; i < labelPositions.length; i++) {
+          for (let j = i + 1; j < labelPositions.length; j++) {
+            const pos1 = labelPositions[i];
+            const pos2 = labelPositions[j];
+            
+            // Check if labels are on the same side (both right or both left)
+            const sameRight = Math.cos(pos1.angle) > 0 && Math.cos(pos2.angle) > 0;
+            const sameLeft = Math.cos(pos1.angle) <= 0 && Math.cos(pos2.angle) <= 0;
+            
+            if (sameRight || sameLeft) {
+              // Check vertical overlap
+              if (Math.abs(pos1.y3 - pos2.y3) < minVerticalGap) {
+                // Adjust the lower label down
+                if (pos1.y3 < pos2.y3) {
+                  pos2.y3 = pos1.y3 + minVerticalGap;
+                  pos2.y2 = pos2.y3;
+                } else {
+                  pos1.y3 = pos2.y3 + minVerticalGap;
+                  pos1.y2 = pos1.y3;
+                }
+              }
+            }
+          }
+        }
+        
+        // Draw all labels
+        labelPositions.forEach((pos: any) => {
           // Draw line from arc to label
           ctx.beginPath();
-          ctx.moveTo(x1, y1);
-          ctx.lineTo(x2, y2);
-          ctx.lineTo(x3, y3);
+          ctx.moveTo(pos.x1, pos.y1);
+          ctx.lineTo(pos.x2, pos.y2);
+          ctx.lineTo(pos.x3, pos.y3);
           ctx.strokeStyle = '#64748b';
           ctx.lineWidth = 1;
           ctx.stroke();
           
           // Draw label text
-          const text = `${label} - ${percentage}%`;
           ctx.font = '12px sans-serif';
           ctx.fillStyle = '#1e293b';
           ctx.textBaseline = 'middle';
           
-          if (Math.cos(angle) > 0) {
+          if (Math.cos(pos.angle) > 0) {
             ctx.textAlign = 'left';
-            ctx.fillText(text, x3 + 5, y3);
+            ctx.fillText(pos.text, pos.x3 + 5, pos.y3);
           } else {
             ctx.textAlign = 'right';
-            ctx.fillText(text, x3 - 5, y3);
+            ctx.fillText(pos.text, pos.x3 - 5, pos.y3);
           }
         });
         
@@ -617,6 +775,18 @@ export class AppComponent implements AfterViewChecked {
     if (!this.userMessage.trim() || this.isLoading) return;
 
     const messageContent = this.userMessage.trim();
+    
+    // Add to query history (keep last 10 queries)
+    if (!this.queryHistory.includes(messageContent)) {
+      this.queryHistory.unshift(messageContent);
+      if (this.queryHistory.length > 10) {
+        this.queryHistory.pop();
+      }
+      // Update filtered history
+      this.filteredHistory = [...this.queryHistory];
+      this.historySearchTerm = '';
+    }
+
     this.messages.push({
       text: messageContent,
       sender: 'user',
@@ -666,7 +836,10 @@ export class AppComponent implements AfterViewChecked {
             } else if (data.type === 'tool_start') {
               this.currentStatus = `Searching ${data.tool}...`;
             } else if (data.type === 'tool_end') {
-              this.currentStatus = '';
+              // Keep status visible for 1000ms before clearing
+              setTimeout(() => {
+                this.currentStatus = '';
+              }, 1000);
             } else if (data.type === 'result') {
               // Store the final result set
               agentMessage.results = data.content;
@@ -745,15 +918,38 @@ export class AppComponent implements AfterViewChecked {
   getColumnKey(results: any[], displayName: string): string {
     if (!results || results.length === 0) return displayName;
     const columns = Object.keys(results[0]);
-    // Find the original column name that matches the display name
-    return columns.find(col => {
+    
+    // First try: exact match with formatting
+    const exactMatch = columns.find(col => {
       const formatted = col
         .replace(/_/g, ' ')
         .split(' ')
         .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
         .join(' ');
       return formatted === displayName;
-    }) || displayName;
+    });
+    
+    if (exactMatch) return exactMatch;
+    
+    // Second try: case-insensitive match
+    const caseInsensitiveMatch = columns.find(col => {
+      const formatted = col
+        .replace(/_/g, ' ')
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join(' ');
+      return formatted.toLowerCase() === displayName.toLowerCase();
+    });
+    
+    if (caseInsensitiveMatch) return caseInsensitiveMatch;
+    
+    // Third try: direct column name match (in case display name is same as column name)
+    const directMatch = columns.find(col => col === displayName);
+    if (directMatch) return directMatch;
+    
+    // Fallback: return display name (will likely fail, but better than nothing)
+    console.warn(`Column key not found for display name: ${displayName}. Available columns:`, columns);
+    return displayName;
   }
 
   scrollToBottom() {
@@ -764,5 +960,181 @@ export class AppComponent implements AfterViewChecked {
       }
     }, 100);
   }
-}
 
+  parseInsight(insightText: string): { aiInsight: string; actionableItem: string } {
+    if (!insightText) return { aiInsight: '', actionableItem: '' };
+    
+    // Match "AI Insight: ..." and "Actionable Item: ..."
+    const aiInsightMatch = insightText.match(/AI Insight:\s*([^\n]*(?:\n(?!Actionable Item:)[^\n]*)*)/i);
+    const actionableItemMatch = insightText.match(/Actionable Item:\s*([^\n]*(?:\n(?!AI Insight:)[^\n]*)*)/i);
+
+    return {
+      aiInsight: aiInsightMatch ? aiInsightMatch[1].trim() : '',
+      actionableItem: actionableItemMatch ? actionableItemMatch[1].trim() : ''
+    };
+  }
+
+  hasNumericData(results: any[]): boolean {
+    if (!results || results.length === 0) return false;
+
+    const headers = Object.keys(results[0]);
+    if (headers.length === 0) return false;
+
+    // Check if at least one column has numeric data
+    for (const row of results) {
+      for (const header of headers) {
+        const val = row[header];
+        const cleanVal = String(val).replace(/[$,%]/g, '').trim();
+        if (cleanVal && !isNaN(parseFloat(cleanVal))) {
+          return true; // Found at least one numeric value
+        }
+      }
+    }
+
+    return false; // No numeric data found
+  }
+
+  sortTable(messageIndex: number, columnName: string) {
+    const msg = this.messages[messageIndex];
+    if (!msg.results) return;
+
+    // Get the actual column key from display name
+    const columnKey = this.getColumnKey(msg.results, columnName);
+
+    // Toggle sort direction if clicking the same column
+    if (msg.sortColumn === columnKey) {
+      msg.sortDirection = msg.sortDirection === 'asc' ? 'desc' : 'asc';
+    } else {
+      // New column, default to ascending
+      msg.sortColumn = columnKey;
+      msg.sortDirection = 'asc';
+    }
+
+    // Force change detection
+    this.cdr.detectChanges();
+  }
+
+  getSortedResults(messageIndex: number): any[] {
+    const msg = this.messages[messageIndex];
+    if (!msg.results || !msg.sortColumn) {
+      return msg.results || [];
+    }
+
+    // Create a copy to avoid mutating original data
+    const sorted = [...msg.results];
+
+    sorted.sort((a: any, b: any) => {
+      const aVal = a[msg.sortColumn!];
+      const bVal = b[msg.sortColumn!];
+
+      // Handle null/undefined values
+      if (aVal == null && bVal == null) return 0;
+      if (aVal == null) return msg.sortDirection === 'asc' ? 1 : -1;
+      if (bVal == null) return msg.sortDirection === 'asc' ? -1 : 1;
+
+      // Try numeric comparison first
+      const aNum = parseFloat(String(aVal).replace(/[$,%]/g, '').trim());
+      const bNum = parseFloat(String(bVal).replace(/[$,%]/g, '').trim());
+
+      if (!isNaN(aNum) && !isNaN(bNum)) {
+        return msg.sortDirection === 'asc' ? aNum - bNum : bNum - aNum;
+      }
+
+      // Fall back to string comparison
+      const aStr = String(aVal).toLowerCase();
+      const bStr = String(bVal).toLowerCase();
+
+      if (msg.sortDirection === 'asc') {
+        return aStr.localeCompare(bStr);
+      } else {
+        return bStr.localeCompare(aStr);
+      }
+    });
+
+    return sorted;
+  }
+
+  getSortIndicator(messageIndex: number, columnName: string): string {
+    const msg = this.messages[messageIndex];
+    if (!msg.results) return '';
+
+    const columnKey = this.getColumnKey(msg.results, columnName);
+    if (msg.sortColumn !== columnKey) return '';
+
+    return msg.sortDirection === 'asc' ? ' ↑' : ' ↓';
+  }
+
+  toggleQueryHistory() {
+    this.showQueryHistory = !this.showQueryHistory;
+  }
+
+  selectFromHistory(query: string) {
+    this.userMessage = query;
+    this.showQueryHistory = false;
+    // Focus on input field
+    setTimeout(() => {
+      const inputField = document.querySelector('input[type="text"]') as HTMLInputElement;
+      if (inputField) {
+        inputField.focus();
+      }
+    }, 100);
+  }
+
+  clearQueryHistory() {
+    this.queryHistory = [];
+    this.showQueryHistory = false;
+  }
+
+  toggleSidebar() {
+    this.sidebarOpen = !this.sidebarOpen;
+  }
+
+  closeSidebar() {
+    this.sidebarOpen = false;
+  }
+
+  filterHistory(searchTerm: string) {
+    this.historySearchTerm = searchTerm;
+    if (!searchTerm.trim()) {
+      this.filteredHistory = [...this.queryHistory];
+    } else {
+      const term = searchTerm.toLowerCase();
+      this.filteredHistory = this.queryHistory.filter(query => 
+        query.toLowerCase().includes(term)
+      );
+    }
+  }
+
+  selectHistoryItem(query: string) {
+    this.userMessage = query;
+    this.sidebarOpen = false;
+    // Focus on input field
+    setTimeout(() => {
+      const inputField = document.querySelector('input[type="text"]') as HTMLInputElement;
+      if (inputField) {
+        inputField.focus();
+      }
+    }, 100);
+  }
+
+  clearSidebarHistory() {
+    this.queryHistory = [];
+    this.filteredHistory = [];
+    this.historySearchTerm = '';
+  }
+
+  clearChat() {
+    // Clear all messages except the initial greeting
+    this.messages = [
+      {
+        text: 'Hello! I can help you query the Users and Orders databases. What would you like to know?',
+        sender: 'agent',
+        timestamp: new Date()
+      }
+    ];
+    this.userMessage = '';
+    this.isLoading = false;
+    this.currentStatus = '';
+    this.scrollToBottom();
+  }
+}
