@@ -892,7 +892,10 @@ export class AppComponent implements AfterViewChecked {
 
   getColumns(results: any[]): string[] {
     if (!results || results.length === 0) return [];
-    const columns = Object.keys(results[0]);
+    
+    // Filter columns to hide IDs in the UI display
+    const columns = Object.keys(results[0]).filter(col => this.isVisibleColumn(col));
+    
     // Remove underscores, capitalize first letter of each word
     return columns.map(col => 
       col
@@ -901,6 +904,12 @@ export class AppComponent implements AfterViewChecked {
         .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
         .join(' ')
     );
+  }
+
+  isVisibleColumn(columnName: string): boolean {
+    const lower = columnName.toLowerCase();
+    // Hide columns ending in _id, id, or just being id (case-insensitive)
+    return !(lower.endsWith('_id') || lower.endsWith('id') || lower === '_id' || lower === 'id');
   }
 
   getColumnKey(results: any[], displayName: string): string {

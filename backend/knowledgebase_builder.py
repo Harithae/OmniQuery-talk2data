@@ -3,21 +3,26 @@ import json
 import pymongo
 import urllib.parse
 import time
-from groq import Groq
 from dotenv import load_dotenv
 from sqlalchemy import create_engine, inspect, text
 from retry_utils import retry_decorator
+from llm_client import get_llm_client
 
 load_dotenv(override=True)
 
 class KBBuilder:
-    def __init__(self, api_key: str, model: str = "llama-3.1-8b-instant"):
-        self.client = Groq(api_key=api_key)
-        self.model = model
+    def __init__(self, llm_client=None):
+        """
+        Initialize KB Builder with an LLM client.
+        
+        Args:
+            llm_client: Optional LLMClient instance. If None, creates one from env config.
+        """
+        self.llm_client = llm_client or get_llm_client()
 
     @retry_decorator(retries=3, delay=5)
     def get_llm_annotation(self, table_name, schema_info, sample_data):
-        time.sleep(1.5) # Rate limit protection for Groq
+        time.sleep(1.5) # Rate limit protection
         prompt = f"""
         You are a database documentation expert. Your task is to provide a structured description for the following database table.
         
@@ -43,8 +48,7 @@ class KBBuilder:
         """
         
         try:
-            response = self.client.chat.completions.create(
-                model=self.model,
+            content = self.llm_client.chat_completion(
                 messages=[
                     {"role": "system", "content": "You are a helpful assistant that generates database documentation in JSON format."},
                     {"role": "user", "content": prompt}
@@ -52,7 +56,7 @@ class KBBuilder:
                 temperature=0.1,
                 response_format={"type": "json_object"}
             )
-            content = response.choices[0].message.content.strip()
+            
             if content.startswith("```"):
                 content = content.replace("```json", "").replace("```", "").strip()
             return json.loads(content)
@@ -113,12 +117,7 @@ def fetch_mongo_samples(db, collection_name, limit=3):
         return []
 
 def main():
-    api_key = os.getenv("GROQ_API_KEY")
-    if not api_key:
-        print("GROQ_API_KEY not found.")
-        return
-
-    builder = KBBuilder(api_key=api_key)
+    builder = KBBuilder()
     kb = {"databases": {}}
     
     schema_dir = "DBSchemas"
@@ -179,10 +178,10 @@ def main():
                 annotation = builder.get_llm_annotation(coll_name, coll_schema, sample_data)
                 kb["databases"][db_name]["tables"][coll_name] = annotation
 
-    with open("kb.json", "w") as f:
+    with open("DBSchemas/knowledgebase_output.json", "w") as f:
         json.dump(kb, f, indent=4)
     
-    print("Knowledge base generated and saved to kb.json")
+    print("Knowledge base generated and saved to DBSchemas/knowledgebase_output.json")
 
 if __name__ == "__main__":
     main()

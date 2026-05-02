@@ -5,9 +5,9 @@ import subprocess
 import sys
 import time
 from typing import AsyncGenerator
-from groq import Groq
 from dotenv import load_dotenv
 from retry_utils import run_command_with_heartbeat
+from llm_client import get_llm_client
 
 load_dotenv(override=True)
 
@@ -19,23 +19,19 @@ def is_retail_domain(user_prompt: str) -> bool:
     """
     Checks if the user prompt is related to the retail domain.
     """
-    api_key = os.getenv("GROQ_API_KEY")
-    if not api_key:
-        logger.warning("GROQ_API_KEY not found. Skipping domain check.")
-        return True
-    
     try:
-        client = Groq(api_key=api_key)
-        model = os.getenv("MODEL_NAME", "llama-3.1-8b-instant")
+        # Use a lightweight model for domain validation
+        # Always use Groq for this check (fast and cheap)
+        client = get_llm_client(provider="groq", model="llama-3.1-8b-instant")
         
         system_prompt = (
             "You are a domain validator. Determine if the user's query is related to RETAIL "
-            "(Customers, Orders, Sales, Products, Inventory). "
+            "(Customers, Orders, Sales, Products, Stores, Inventory). "
+            "Note: Queries asking for geographical locations of customers or stores (e.g., 'nearby New York', 'in California') ARE valid retail queries. "
             "Respond with 'YES' if it is related, and 'NO' otherwise. Return ONLY 'YES' or 'NO'."
         )
         
-        response = client.chat.completions.create(
-            model=model,
+        decision = client.chat_completion(
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt}
@@ -44,10 +40,10 @@ def is_retail_domain(user_prompt: str) -> bool:
             max_tokens=5
         )
         
-        decision = response.choices[0].message.content.strip().upper()
-        return "YES" in decision
+        return "YES" in decision.upper()
     except Exception as e:
         logger.error(f"Domain check error: {e}")
+        return True  # Fallback to proceed if check fails
         return True # Fallback to proceed if check fails
 
 async def run_master_agent(user_prompt: str) -> AsyncGenerator[dict, None]:
@@ -67,11 +63,24 @@ async def run_master_agent(user_prompt: str) -> AsyncGenerator[dict, None]:
             }
             return
 
-        # Step 1: Extract Schema
-        yield {"type": "tool_start", "tool": "DBSchemaExtractor", "input": "Extracting database schemas..."}
-        async for hb in run_command_with_heartbeat([sys.executable, "DBSchemaExtractor.py"], "DBSchemaExtractor"):
-            yield hb
-        yield {"type": "tool_end", "tool": "DBSchemaExtractor", "status": "success"}
+        # Step 1: Extract Schema (Conditional)
+        schema_dir = "DBSchemas"
+        if not os.path.exists(schema_dir) or not os.listdir(schema_dir):
+            yield {"type": "tool_start", "tool": "DBSchemaExtractor", "input": "Extracting database schemas..."}
+            async for hb in run_command_with_heartbeat([sys.executable, "DBSchemaExtractor.py"], "DBSchemaExtractor"):
+                yield hb
+            yield {"type": "tool_end", "tool": "DBSchemaExtractor", "status": "success"}
+        else:
+            yield {"type": "status", "content": "Using cached database schemas."}
+
+        # Step 1.5: Build Knowledge Base (Conditional)
+        if not os.path.exists("DBSchemas/knowledgebase_output.json"):
+            yield {"type": "tool_start", "tool": "KnowledgeBaseBuilder", "input": "Generating knowledge base (initial setup)..."}
+            async for hb in run_command_with_heartbeat([sys.executable, "knowledgebase_builder.py"], "KnowledgeBaseBuilder"):
+                yield hb
+            yield {"type": "tool_end", "tool": "KnowledgeBaseBuilder", "status": "success"}
+        else:
+            yield {"type": "status", "content": "Using existing knowledge base."}
 
         # Step 2: Generate Query Plan
         yield {"type": "tool_start", "tool": "QueryGenerator", "input": user_prompt}
@@ -80,8 +89,8 @@ async def run_master_agent(user_prompt: str) -> AsyncGenerator[dict, None]:
         yield {"type": "tool_end", "tool": "QueryGenerator", "status": "success"}
 
         # --- DATA GUARDRAILS ---
-        if os.path.exists("llm_output.json"):
-            with open("llm_output.json", "r") as f:
+        if os.path.exists("Outputs/llm_output.json"):
+            with open("Outputs/llm_output.json", "r") as f:
                 plan = json.load(f)
             
             if "error" in plan:
@@ -156,8 +165,8 @@ async def run_master_agent(user_prompt: str) -> AsyncGenerator[dict, None]:
         yield {"type": "token", "content": "✅ Business insights generated.\n"}
 
         # Step 6: Load and Send Final Result
-        if os.path.exists("FinalResult.json"):
-            with open("FinalResult.json", "r") as f:
+        if os.path.exists("Outputs/FinalResult.json"):
+            with open("Outputs/FinalResult.json", "r") as f:
                 final_data = json.load(f)
             
             results = final_data.get("results", [])
@@ -183,7 +192,7 @@ async def run_master_agent(user_prompt: str) -> AsyncGenerator[dict, None]:
                 
                 table_md = "\n" + header + "\n" + sep + "\n" + "\n".join(table_rows) + "\n"
                 if row_count > 10:
-                    table_md += f"\n*Displaying first 10 rows. Use 'View Table' for full results.*\n"
+                    table_md += f"\n*Displaying first 10/{row_count} rows. Use 'View Table' for full results.*\n"
                 
                 yield {"type": "token", "content": table_md}
             else:
@@ -191,8 +200,8 @@ async def run_master_agent(user_prompt: str) -> AsyncGenerator[dict, None]:
                 
             # Send business insights to UI
             insight_text = ""
-            if os.path.exists("insight_output.txt"):
-                with open("insight_output.txt", "r", encoding='utf-8') as f:
+            if os.path.exists("Outputs/insight_output.txt"):
+                with open("Outputs/insight_output.txt", "r", encoding='utf-8') as f:
                     insight_text = f.read()
 
             if insight_text:

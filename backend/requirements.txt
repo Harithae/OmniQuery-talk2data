@@ -16,3 +16,4 @@ tiktoken
 langchain-ollama
 sqlalchemy
 uv
+google.genai
