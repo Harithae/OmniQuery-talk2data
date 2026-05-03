@@ -71,7 +71,7 @@ export class AppComponent implements AfterViewChecked {
   userMessage = '';
   messages: Message[] = [
     {
-      text: 'Hello! I can help you query the Users and Orders databases. What would you like to know?',
+      text: 'Hello! How can I assist you with your data?',
       sender: 'agent',
       timestamp: new Date()
     }
@@ -112,7 +112,7 @@ export class AppComponent implements AfterViewChecked {
 
   @ViewChildren('chartCanvas') chartCanvases!: QueryList<ElementRef<HTMLCanvasElement>>;
 
-  constructor(private chatService: ChatService, private sanitizer: DomSanitizer, private cdr: ChangeDetectorRef) { 
+  constructor(private chatService: ChatService, private sanitizer: DomSanitizer, private cdr: ChangeDetectorRef) {
     this.filteredHistory = [...this.queryHistory];
   }
 
@@ -132,7 +132,7 @@ export class AppComponent implements AfterViewChecked {
     const columns = this.getColumns(msg.results);
     const tableWidth = 800; // Base table width
     const defaultWidth = tableWidth / columns.length;
-    
+
     msg.columnWidths = columns.map(() => defaultWidth);
   }
 
@@ -142,10 +142,10 @@ export class AppComponent implements AfterViewChecked {
     this.resizingMessageIndex = messageIndex;
     this.resizingColumnIndex = columnIndex;
     this.startX = event.clientX;
-    
+
     const msg = this.messages[messageIndex];
     this.startWidths = [...(msg.columnWidths || [])];
-    
+
     document.addEventListener('mousemove', this.onResize.bind(this));
     document.addEventListener('mouseup', this.onResizeEnd.bind(this));
     document.body.style.cursor = 'col-resize';
@@ -154,17 +154,17 @@ export class AppComponent implements AfterViewChecked {
 
   onResize(event: MouseEvent) {
     if (!this.isResizing) return;
-    
+
     const msg = this.messages[this.resizingMessageIndex];
     if (!msg.columnWidths) return;
 
     const deltaX = event.clientX - this.startX;
     const minWidth = 80; // Minimum column width
-    
+
     // Update current column width
     const newWidth = Math.max(minWidth, this.startWidths[this.resizingColumnIndex] + deltaX);
     msg.columnWidths[this.resizingColumnIndex] = newWidth;
-    
+
     // Adjust next column width to maintain total width
     if (this.resizingColumnIndex < msg.columnWidths.length - 1) {
       const nextColumnIndex = this.resizingColumnIndex + 1;
@@ -196,13 +196,13 @@ export class AppComponent implements AfterViewChecked {
 
   showTableView(index: number) {
     const msg = this.messages[index];
-    
+
     // Destroy chart if it exists
     if (msg.chartInstance) {
       msg.chartInstance.destroy();
       msg.chartInstance = null;
     }
-    
+
     msg.showChart = false;
     msg.showFullResults = false;
   }
@@ -212,7 +212,7 @@ export class AppComponent implements AfterViewChecked {
     msg.showTableOptions = !msg.showTableOptions;
     msg.showChart = false;
     msg.showFullResults = false;
-    
+
     // Destroy chart instance when switching to table view
     if (msg.chartInstance) {
       msg.chartInstance.destroy();
@@ -222,13 +222,13 @@ export class AppComponent implements AfterViewChecked {
 
   showFullResults(index: number) {
     const msg = this.messages[index];
-    
+
     // Destroy chart if it exists
     if (msg.chartInstance) {
       msg.chartInstance.destroy();
       msg.chartInstance = null;
     }
-    
+
     msg.showChart = false;
     msg.showFullResults = true;
     msg.showTableOptions = false;
@@ -238,16 +238,16 @@ export class AppComponent implements AfterViewChecked {
 
   showChartView(index: number) {
     const msg = this.messages[index];
-    
+
     // Reset table options when switching to chart
     msg.showTableOptions = false;
     msg.showFullResults = false;
-    
+
     // Initialize chartType to 'bar' if not already set
     if (!msg.chartType) {
       msg.chartType = 'bar';
     }
-    
+
     // Try to parse if not already parsed
     if (!msg.chartData && msg.results) {
       // If we have results data, use it directly instead of parsing markdown
@@ -266,13 +266,13 @@ export class AppComponent implements AfterViewChecked {
 
   parseTableForChart(index: number) {
     const msg = this.messages[index];
-    
+
     // If we have results data, use it directly
     if (msg.results && Array.isArray(msg.results) && msg.results.length > 0) {
       this.parseResultsForChart(msg);
       return;
     }
-    
+
     // Otherwise try to parse from markdown
     const tokens = marked.lexer(msg.text);
 
@@ -441,9 +441,9 @@ export class AppComponent implements AfterViewChecked {
 
   updateChartDataForType(msg: any, chartType: string) {
     if (!msg.chartData) return;
-    
+
     const dataset = msg.chartData.datasets[0];
-    
+
     if (chartType === 'line') {
       dataset.fill = false;
       dataset.backgroundColor = 'transparent';
@@ -458,7 +458,7 @@ export class AppComponent implements AfterViewChecked {
 
   changeChartType(index: number, chartType: 'bar' | 'line' | 'doughnut' | 'horizontalBar') {
     const msg = this.messages[index];
-    
+
     // Destroy existing chart instance completely
     if (msg.chartInstance) {
       try {
@@ -468,17 +468,17 @@ export class AppComponent implements AfterViewChecked {
         console.error('Error destroying chart:', e);
       }
     }
-    
+
     // Set the new chart type
     msg.chartType = chartType;
     console.log('Chart type set to:', msg.chartType);
-    
+
     // Force Angular to detect changes immediately
     this.cdr.detectChanges();
-    
+
     // Update chart data for the new type
     this.updateChartDataForType(msg, chartType);
-    
+
     // Wait for DOM to settle, then recreate chart
     setTimeout(() => {
       try {
@@ -492,13 +492,13 @@ export class AppComponent implements AfterViewChecked {
   zoomChart(index: number, direction: 'in' | 'out') {
     const msg = this.messages[index];
     if (!msg.chartZoom) msg.chartZoom = 1;
-    
+
     if (direction === 'in') {
       msg.chartZoom = Math.min(msg.chartZoom + 0.2, 3); // Max 3x zoom
     } else {
       msg.chartZoom = Math.max(msg.chartZoom - 0.2, 0.5); // Min 0.5x zoom
     }
-    
+
     // Recreate chart with new zoom
     if (msg.chartInstance) {
       try {
@@ -514,7 +514,7 @@ export class AppComponent implements AfterViewChecked {
   resetZoom(index: number) {
     const msg = this.messages[index];
     msg.chartZoom = 1;
-    
+
     if (msg.chartInstance) {
       try {
         msg.chartInstance.destroy();
@@ -528,10 +528,10 @@ export class AppComponent implements AfterViewChecked {
 
   initChart(index: number) {
     const msg = this.messages[index];
-    
+
     // Find the canvas element by ID
     const canvasElement = document.getElementById(`chart-${index}`) as HTMLCanvasElement;
-    
+
     if (!canvasElement) {
       console.warn(`Canvas element not found for chart-${index}`);
       return;
@@ -554,7 +554,7 @@ export class AppComponent implements AfterViewChecked {
 
     // Handle chart type mapping
     let chartType = msg.chartType || 'bar';
-    
+
     // Map custom types to Chart.js types
     if (chartType === 'horizontalBar') {
       chartType = 'bar';
@@ -581,14 +581,14 @@ export class AppComponent implements AfterViewChecked {
         if (msg.chartType === 'doughnut' && msg.chartTotal !== undefined) {
           const { ctx, chartArea } = chart;
           if (!chartArea) return;
-          
+
           const centerX = (chartArea.left + chartArea.right) / 2;
           const centerY = (chartArea.top + chartArea.bottom) / 2;
-          
+
           ctx.save();
           // Restrict to 2 decimal places
           const text = msg.chartTotal.toFixed(2);
-          
+
           let fontSize = 40;
           if (text.length > 8) {
             fontSize = 24;
@@ -597,7 +597,7 @@ export class AppComponent implements AfterViewChecked {
           } else if (text.length > 4) {
             fontSize = 36;
           }
-          
+
           ctx.font = `bold ${fontSize}px sans-serif`;
           ctx.fillStyle = '#1f2937';
           ctx.textAlign = 'center';
@@ -613,44 +613,44 @@ export class AppComponent implements AfterViewChecked {
       id: 'externalLabels',
       afterDraw(chart: any) {
         if (msg.chartType !== 'doughnut') return;
-        
+
         const { ctx, chartArea, data } = chart;
         const centerX = (chartArea.left + chartArea.right) / 2;
         const centerY = (chartArea.top + chartArea.bottom) / 2;
         const radius = Math.min(chartArea.right - centerX, chartArea.bottom - centerY);
-        
+
         ctx.save();
-        
+
         const meta = chart.getDatasetMeta(0);
         const total = data.datasets[0].data.reduce((a: number, b: number) => a + b, 0);
-        
+
         // Calculate label positions to avoid overlaps
         const labelPositions: any[] = [];
-        
+
         meta.data.forEach((arc: any, index: number) => {
           const label = data.labels[index];
           const value = data.datasets[0].data[index];
           const percentage = ((value / total) * 100).toFixed(1);
-          
+
           // Calculate angle for this segment
           const angle = (arc.startAngle + arc.endAngle) / 2;
-          
+
           // Point on the arc edge
           const x1 = centerX + Math.cos(angle) * (radius * 0.85);
           const y1 = centerY + Math.sin(angle) * (radius * 0.85);
-          
+
           // Extended point for the line
           const lineLength = 40;
           const x2 = centerX + Math.cos(angle) * (radius * 0.85 + lineLength);
           const y2 = centerY + Math.sin(angle) * (radius * 0.85 + lineLength);
-          
+
           // Horizontal line extension with more space
           const horizontalLength = 60;
           const x3 = x2 + (Math.cos(angle) > 0 ? horizontalLength : -horizontalLength);
           const y3 = y2;
-          
+
           const text = `${label} - ${percentage}%`;
-          
+
           labelPositions.push({
             text,
             x1, y1, x2, y2, x3, y3,
@@ -658,18 +658,18 @@ export class AppComponent implements AfterViewChecked {
             index
           });
         });
-        
+
         // Adjust overlapping labels vertically
         const minVerticalGap = 25;
         for (let i = 0; i < labelPositions.length; i++) {
           for (let j = i + 1; j < labelPositions.length; j++) {
             const pos1 = labelPositions[i];
             const pos2 = labelPositions[j];
-            
+
             // Check if labels are on the same side (both right or both left)
             const sameRight = Math.cos(pos1.angle) > 0 && Math.cos(pos2.angle) > 0;
             const sameLeft = Math.cos(pos1.angle) <= 0 && Math.cos(pos2.angle) <= 0;
-            
+
             if (sameRight || sameLeft) {
               // Check vertical overlap
               if (Math.abs(pos1.y3 - pos2.y3) < minVerticalGap) {
@@ -685,7 +685,7 @@ export class AppComponent implements AfterViewChecked {
             }
           }
         }
-        
+
         // Draw all labels
         labelPositions.forEach((pos: any) => {
           // Draw line from arc to label
@@ -696,12 +696,12 @@ export class AppComponent implements AfterViewChecked {
           ctx.strokeStyle = '#64748b';
           ctx.lineWidth = 1;
           ctx.stroke();
-          
+
           // Draw label text
           ctx.font = '12px sans-serif';
           ctx.fillStyle = '#1e293b';
           ctx.textBaseline = 'middle';
-          
+
           if (Math.cos(pos.angle) > 0) {
             ctx.textAlign = 'left';
             ctx.fillText(pos.text, pos.x3 + 5, pos.y3);
@@ -710,7 +710,7 @@ export class AppComponent implements AfterViewChecked {
             ctx.fillText(pos.text, pos.x3 - 5, pos.y3);
           }
         });
-        
+
         ctx.restore();
       }
     };
@@ -734,7 +734,7 @@ export class AppComponent implements AfterViewChecked {
             }
           },
           plugins: {
-            legend: { 
+            legend: {
               display: false
             },
             tooltip: {
@@ -779,7 +779,7 @@ export class AppComponent implements AfterViewChecked {
     if (!this.userMessage.trim() || this.isLoading) return;
 
     const messageContent = this.userMessage.trim();
-    
+
     // Add to query history (keep last 10 queries)
     if (!this.queryHistory.includes(messageContent)) {
       this.queryHistory.unshift(messageContent);
@@ -838,7 +838,7 @@ export class AppComponent implements AfterViewChecked {
             } else if (data.type === 'insight') {
               agentMessage.insight = (agentMessage.insight || '') + data.content;
             } else if (data.type === 'tool_start') {
-              this.currentStatus = `Searching ${data.tool}...`;
+              this.currentStatus = `Agent is processing...`;
             } else if (data.type === 'tool_end') {
               // Keep status visible for 1000ms before clearing
               setTimeout(() => {
@@ -885,13 +885,13 @@ export class AppComponent implements AfterViewChecked {
   cleanAgentMessage(text: string): string {
     // Remove status messages (✅ Database schemas extracted, etc.)
     text = text.replace(/✅[^\n]*\n?/g, '');
-    
+
     // Replace "Final Results (X rows)" with "Results Summary"
     text = text.replace(/Final Results\s*\(\d+\s*rows?\)/gi, 'Results Summary');
-    
+
     // Remove extra blank lines
     text = text.replace(/\n\n+/g, '\n\n');
-    
+
     return text.trim();
   }
 
@@ -899,12 +899,12 @@ export class AppComponent implements AfterViewChecked {
 
   getColumns(results: any[]): string[] {
     if (!results || results.length === 0) return [];
-    
+
     // Filter columns to hide IDs in the UI display
     const columns = Object.keys(results[0]).filter(col => this.isVisibleColumn(col));
-    
+
     // Remove underscores, capitalize first letter of each word
-    return columns.map(col => 
+    return columns.map(col =>
       col
         .replace(/_/g, ' ')
         .split(' ')
@@ -922,7 +922,7 @@ export class AppComponent implements AfterViewChecked {
   getColumnKey(results: any[], displayName: string): string {
     if (!results || results.length === 0) return displayName;
     const columns = Object.keys(results[0]);
-    
+
     // First try: exact match with formatting
     const exactMatch = columns.find(col => {
       const formatted = col
@@ -932,9 +932,9 @@ export class AppComponent implements AfterViewChecked {
         .join(' ');
       return formatted === displayName;
     });
-    
+
     if (exactMatch) return exactMatch;
-    
+
     // Second try: case-insensitive match
     const caseInsensitiveMatch = columns.find(col => {
       const formatted = col
@@ -944,13 +944,13 @@ export class AppComponent implements AfterViewChecked {
         .join(' ');
       return formatted.toLowerCase() === displayName.toLowerCase();
     });
-    
+
     if (caseInsensitiveMatch) return caseInsensitiveMatch;
-    
+
     // Third try: direct column name match (in case display name is same as column name)
     const directMatch = columns.find(col => col === displayName);
     if (directMatch) return directMatch;
-    
+
     // Fallback: return display name (will likely fail, but better than nothing)
     console.warn(`Column key not found for display name: ${displayName}. Available columns:`, columns);
     return displayName;
@@ -967,7 +967,7 @@ export class AppComponent implements AfterViewChecked {
 
   parseInsight(insightText: string): { aiInsight: string; actionableItem: string } {
     if (!insightText) return { aiInsight: '', actionableItem: '' };
-    
+
     // Match "AI Insight: ..." and "Actionable Item: ..."
     const aiInsightMatch = insightText.match(/AI Insight:\s*([^\n]*(?:\n(?!Actionable Item:)[^\n]*)*)/i);
     const actionableItemMatch = insightText.match(/Actionable Item:\s*([^\n]*(?:\n(?!AI Insight:)[^\n]*)*)/i);
@@ -1095,24 +1095,24 @@ export class AppComponent implements AfterViewChecked {
       msg.currentPage = page;
     }
   }
-  
+
   getPageNumbers(messageIndex: number): number[] {
     const totalPages = this.getTotalPages(messageIndex);
     const currentPage = this.messages[messageIndex].currentPage || 1;
     const maxPagesToShow = 5;
-    
+
     if (totalPages <= maxPagesToShow) {
       return Array.from({ length: totalPages }, (_, i) => i + 1);
     }
-    
+
     let startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
     let endPage = startPage + maxPagesToShow - 1;
-    
+
     if (endPage > totalPages) {
       endPage = totalPages;
       startPage = Math.max(1, endPage - maxPagesToShow + 1);
     }
-    
+
     const pages = [];
     for (let i = startPage; i <= endPage; i++) {
       pages.push(i);
@@ -1169,7 +1169,7 @@ export class AppComponent implements AfterViewChecked {
       this.filteredHistory = [...this.queryHistory];
     } else {
       const term = searchTerm.toLowerCase();
-      this.filteredHistory = this.queryHistory.filter(query => 
+      this.filteredHistory = this.queryHistory.filter(query =>
         query.toLowerCase().includes(term)
       );
     }
@@ -1197,7 +1197,7 @@ export class AppComponent implements AfterViewChecked {
     // Clear all messages except the initial greeting
     this.messages = [
       {
-        text: 'Hello! I can help you query the Users and Orders databases. What would you like to know?',
+        text: 'Hello! How can I assist you with your data?',
         sender: 'agent',
         timestamp: new Date()
       }
