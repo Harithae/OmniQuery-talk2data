@@ -6,21 +6,25 @@
     <div class="logo">
       <span class="icon">
         <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M4 6C4 4.34315 7.58172 3 12 3C16.4183 3 20 4.34315 20 6C20 7.65685 16.4183 9 12 9C7.58172 9 4 7.65685 4 6Z" stroke="url(#logo-grad)" stroke-width="2.5" stroke-linejoin="round"/>
-          <path d="M4 6V18C4 19.6569 7.58172 21 12 21C16.4183 21 20 19.6569 20 18V6" stroke="url(#logo-grad)" stroke-width="2.5" stroke-linejoin="round"/>
-          <path d="M4 12C4 13.6569 7.58172 15 12 15C16.4183 15 20 13.6569 20 12" stroke="url(#logo-grad)" stroke-width="2.5" stroke-linejoin="round"/>
+          <path
+            d="M4 6C4 4.34315 7.58172 3 12 3C16.4183 3 20 4.34315 20 6C20 7.65685 16.4183 9 12 9C7.58172 9 4 7.65685 4 6Z"
+            stroke="url(#logo-grad)" stroke-width="2.5" stroke-linejoin="round" />
+          <path d="M4 6V18C4 19.6569 7.58172 21 12 21C16.4183 21 20 19.6569 20 18V6" stroke="url(#logo-grad)"
+            stroke-width="2.5" stroke-linejoin="round" />
+          <path d="M4 12C4 13.6569 7.58172 15 12 15C16.4183 15 20 13.6569 20 12" stroke="url(#logo-grad)"
+            stroke-width="2.5" stroke-linejoin="round" />
           <defs>
             <linearGradient id="logo-grad" x1="4" y1="3" x2="20" y2="21" gradientUnits="userSpaceOnUse">
-              <stop stop-color="#0ea5e9"/>
-              <stop offset="1" stop-color="#6366f1"/>
+              <stop stop-color="#0ea5e9" />
+              <stop offset="1" stop-color="#6366f1" />
             </linearGradient>
           </defs>
         </svg>
       </span>
-      <h1>Talk2Data <span>Agent</span></h1>
+      <h1><span>Talk2Data</span></h1>
     </div>
     <div class="status" [class.online]="!isLoading">
-      {{ isLoading ? (currentStatus || 'Agent is thinking...') : 'Agent is Online' }}
+      {{ isLoading ? (currentStatus || 'Agent is processing...') : 'Agent is Online' }}
     </div>
   </header>
 
@@ -35,18 +39,20 @@
       </button>
       <div class="search-box">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/>
-          <path d="M21 21L16.65 16.65" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2" />
+          <path d="M21 21L16.65 16.65" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
         </svg>
-        <input type="text" placeholder="Search history..." [(ngModel)]="historySearchTerm" (input)="filterHistory(historySearchTerm)">
+        <input type="text" placeholder="Search history..." [(ngModel)]="historySearchTerm"
+          (input)="filterHistory(historySearchTerm)">
       </div>
     </div>
 
     <div class="sidebar-content">
       <h3 class="history-title">⏱️ History</h3>
-      
+
       <div class="history-list" *ngIf="filteredHistory.length > 0">
-        <button *ngFor="let query of filteredHistory" class="history-item" (click)="selectHistoryItem(query)" [title]="query">
+        <button *ngFor="let query of filteredHistory" class="history-item" (click)="selectHistoryItem(query)"
+          [title]="query">
           {{ query.length > 35 ? query.substring(0, 35) + '...' : query }}
         </button>
       </div>
@@ -57,7 +63,8 @@
     </div>
 
     <div class="sidebar-footer">
-      <button class="clear-btn" (click)="clearSidebarHistory()" *ngIf="queryHistory.length > 0" title="Clear all history">
+      <button class="clear-btn" (click)="clearSidebarHistory()" *ngIf="queryHistory.length > 0"
+        title="Clear all history">
         🗑️ Clear History
       </button>
       <button class="clear-btn clear-chat-btn" (click)="clearChat()" title="Clear all chat messages">
@@ -81,8 +88,7 @@
               </button>
 
               <!-- View Full Results Sub-button - Always visible when results exist -->
-              <div class="table-type-buttons"
-                *ngIf="msg.results && msg.hasMoreRows">
+              <div class="table-type-buttons" *ngIf="msg.results && msg.hasMoreRows">
                 <button class="chart-type-btn view-full-results-btn" (click)="showFullResults(i)"
                   [class.active]="msg.showFullResults"
                   [style.background]="msg.showFullResults ? '#374151' : 'rgba(255, 255, 255, 0.9)'"
@@ -92,7 +98,7 @@
               </div>
             </div>
 
-            <button class="viz-btn" (click)="showChartView(i)" [class.active]="msg.showChart" 
+            <button class="viz-btn" (click)="showChartView(i)" [class.active]="msg.showChart"
               [disabled]="!msg.results || !hasNumericData(msg.results)"
               [title]="(!msg.results || !hasNumericData(msg.results)) ? 'No numeric data available for visualization' : 'Visualize Data'"
               *ngIf="msg.hasTable">
@@ -165,14 +171,14 @@
                 <thead>
                   <tr>
                     <th *ngFor="let col of getColumns(msg.results); let colIndex = index"
-                      [style.width]="getColumnWidth(i, colIndex)"
-                      (click)="sortTable(i, col)"
-                      class="sortable-header">
+                      [style.width]="getColumnWidth(i, colIndex)" (click)="sortTable(i, col)" class="sortable-header">
                       <span class="header-text">{{ col }}</span>
-                      <span class="sort-icon" [class.sorted-asc]="msg.sortColumn === getColumnKey(msg.results, col) && msg.sortDirection === 'asc'" [class.sorted-desc]="msg.sortColumn === getColumnKey(msg.results, col) && msg.sortDirection === 'desc'">
+                      <span class="sort-icon"
+                        [class.sorted-asc]="msg.sortColumn === getColumnKey(msg.results, col) && msg.sortDirection === 'asc'"
+                        [class.sorted-desc]="msg.sortColumn === getColumnKey(msg.results, col) && msg.sortDirection === 'desc'">
                         <svg width="10" height="12" viewBox="0 0 10 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M5 0L10 4H0L5 0Z" fill="currentColor"/>
-                          <path d="M5 12L0 8H10L5 12Z" fill="currentColor"/>
+                          <path d="M5 0L10 4H0L5 0Z" fill="currentColor" />
+                          <path d="M5 12L0 8H10L5 12Z" fill="currentColor" />
                         </svg>
                       </span>
                       <div class="resize-handle" *ngIf="colIndex < getColumns(msg.results).length - 1"
@@ -191,7 +197,8 @@
               </table>
             </div>
             <div class="table-note" *ngIf="msg.hasMoreRows">
-              <p>Showing first 10/{{ msg.results.length }} rows. For complete data, use "View Table" → "View Full Results".</p>
+              <p>Showing first 10/{{ msg.results.length }} rows. For complete data, use "View Table" → "View Full
+                Results".</p>
             </div>
           </div>
 
@@ -203,14 +210,14 @@
                 <thead>
                   <tr>
                     <th *ngFor="let col of getColumns(msg.results); let colIndex = index"
-                      [style.width]="getColumnWidth(i, colIndex)"
-                      (click)="sortTable(i, col)"
-                      class="sortable-header">
+                      [style.width]="getColumnWidth(i, colIndex)" (click)="sortTable(i, col)" class="sortable-header">
                       <span class="header-text">{{ col }}</span>
-                      <span class="sort-icon" [class.sorted-asc]="msg.sortColumn === getColumnKey(msg.results, col) && msg.sortDirection === 'asc'" [class.sorted-desc]="msg.sortColumn === getColumnKey(msg.results, col) && msg.sortDirection === 'desc'">
+                      <span class="sort-icon"
+                        [class.sorted-asc]="msg.sortColumn === getColumnKey(msg.results, col) && msg.sortDirection === 'asc'"
+                        [class.sorted-desc]="msg.sortColumn === getColumnKey(msg.results, col) && msg.sortDirection === 'desc'">
                         <svg width="10" height="12" viewBox="0 0 10 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M5 0L10 4H0L5 0Z" fill="currentColor"/>
-                          <path d="M5 12L0 8H10L5 12Z" fill="currentColor"/>
+                          <path d="M5 0L10 4H0L5 0Z" fill="currentColor" />
+                          <path d="M5 12L0 8H10L5 12Z" fill="currentColor" />
                         </svg>
                       </span>
                       <div class="resize-handle" *ngIf="colIndex < getColumns(msg.results).length - 1"
@@ -219,7 +226,7 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <tr *ngFor="let row of getSortedResults(i)">
+                  <tr *ngFor="let row of getPaginatedResults(i)">
                     <td *ngFor="let col of getColumns(msg.results); let colIndex = index"
                       [style.width]="getColumnWidth(i, colIndex)">
                       {{ row[getColumnKey(msg.results, col)] }}
@@ -227,6 +234,23 @@
                   </tr>
                 </tbody>
               </table>
+            </div>
+
+            <!-- Pagination Controls -->
+            <div class="pagination-controls" *ngIf="msg.results.length > (msg.pageSize || 10)">
+              <div class="pagination-info">
+                Showing {{ ((msg.currentPage || 1) - 1) * (msg.pageSize || 10) + 1 }} to
+                {{ mathMin((msg.currentPage || 1) * (msg.pageSize || 10), msg.results.length) }} of {{
+                msg.results.length }} entries
+              </div>
+              <div class="pagination-buttons">
+                <button (click)="prevPage(i)" [disabled]="(msg.currentPage || 1) === 1"
+                  class="page-btn">Previous</button>
+                <button *ngFor="let page of getPageNumbers(i)" (click)="goToPage(i, page)"
+                  [class.active]="page === (msg.currentPage || 1)" class="page-btn number-btn">{{ page }}</button>
+                <button (click)="nextPage(i)" [disabled]="(msg.currentPage || 1) === getTotalPages(i)"
+                  class="page-btn">Next</button>
+              </div>
             </div>
           </div>
 
@@ -244,13 +268,16 @@
           <div class="insight-container" *ngIf="msg.insight"
             style="margin-top: 15px; padding: 15px; background-color: rgba(99, 102, 241, 0.05); border-left: 4px solid #000000; border-radius: 6px; font-size: 0.95em; color: #334155; line-height: 1.6;">
             <h4 style="margin: 0 0 1rem 0; color: #1e293b; font-size: 1.05em; font-weight: 700;">Business Insights</h4>
-            
+
             <div *ngIf="parseInsight(msg.insight).aiInsight" class="insight-section">
-              <p style="margin: 0 0 0.5rem 0;"><strong style="color: #1e293b;">AI Insight:</strong> {{ parseInsight(msg.insight).aiInsight }}</p>
+              <p style="margin: 0 0 0.5rem 0;"><strong style="color: #1e293b;">AI Insight:</strong> {{
+                parseInsight(msg.insight).aiInsight }}</p>
             </div>
-            
-            <div *ngIf="parseInsight(msg.insight).actionableItem" class="insight-section" style="margin-top: 1rem; padding-top: 1rem;">
-              <p style="margin: 0;"><strong style="color: #1e293b;">Actionable Item:</strong> {{ parseInsight(msg.insight).actionableItem }}</p>
+
+            <div *ngIf="parseInsight(msg.insight).actionableItem" class="insight-section"
+              style="margin-top: 1rem; padding-top: 1rem;">
+              <p style="margin: 0;"><strong style="color: #1e293b;">Actionable Item:</strong> {{
+                parseInsight(msg.insight).actionableItem }}</p>
             </div>
           </div>
 
@@ -261,7 +288,7 @@
         <div class="message-bubble agent-progress">
           <div class="status-content">
             <div class="spinner"></div>
-            <span>{{ currentStatus || 'Agent is thinking...' }}</span>
+            <span>{{ currentStatus || 'Agent is processing...' }}</span>
           </div>
         </div>
       </div>
@@ -270,8 +297,8 @@
 
     <footer class="input-area">
       <div class="input-wrapper">
-        <input type="text" [(ngModel)]="userMessage" (keyup.enter)="sendMessage()"
-          placeholder="Ask about Users or Orders data..." [disabled]="isLoading">
+        <input type="text" [(ngModel)]="userMessage" (keyup.enter)="sendMessage()" placeholder="Enter your query..."
+          [disabled]="isLoading">
         <button (click)="sendMessage()" [disabled]="isLoading || !userMessage.trim()">
           <svg viewBox="0 0 24 24" width="24" height="24">
             <path fill="currentColor" d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path>
