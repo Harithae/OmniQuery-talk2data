@@ -54,6 +54,8 @@ interface Message {
   insight?: string;
   sortColumn?: string;
   sortDirection?: 'asc' | 'desc';
+  currentPage?: number;
+  pageSize?: number;
 }
 
 @Component({
@@ -230,6 +232,8 @@ export class AppComponent implements AfterViewChecked {
     msg.showChart = false;
     msg.showFullResults = true;
     msg.showTableOptions = false;
+    if (!msg.currentPage) msg.currentPage = 1;
+    if (!msg.pageSize) msg.pageSize = 10;
   }
 
   showChartView(index: number) {
@@ -1052,6 +1056,72 @@ export class AppComponent implements AfterViewChecked {
     });
 
     return sorted;
+  }
+
+  getPaginatedResults(messageIndex: number): any[] {
+    const msg = this.messages[messageIndex];
+    const sortedResults = this.getSortedResults(messageIndex);
+    if (!msg.showFullResults || !msg.currentPage || !msg.pageSize) {
+      return sortedResults;
+    }
+    const startIndex = (msg.currentPage - 1) * msg.pageSize;
+    const endIndex = startIndex + msg.pageSize;
+    return sortedResults.slice(startIndex, endIndex);
+  }
+
+  getTotalPages(messageIndex: number): number {
+    const msg = this.messages[messageIndex];
+    if (!msg.results || !msg.pageSize) return 1;
+    return Math.ceil(msg.results.length / msg.pageSize);
+  }
+
+  nextPage(messageIndex: number) {
+    const msg = this.messages[messageIndex];
+    if (msg.currentPage && msg.currentPage < this.getTotalPages(messageIndex)) {
+      msg.currentPage++;
+    }
+  }
+
+  prevPage(messageIndex: number) {
+    const msg = this.messages[messageIndex];
+    if (msg.currentPage && msg.currentPage > 1) {
+      msg.currentPage--;
+    }
+  }
+
+  goToPage(messageIndex: number, page: number) {
+    const msg = this.messages[messageIndex];
+    if (page >= 1 && page <= this.getTotalPages(messageIndex)) {
+      msg.currentPage = page;
+    }
+  }
+  
+  getPageNumbers(messageIndex: number): number[] {
+    const totalPages = this.getTotalPages(messageIndex);
+    const currentPage = this.messages[messageIndex].currentPage || 1;
+    const maxPagesToShow = 5;
+    
+    if (totalPages <= maxPagesToShow) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+    
+    let startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
+    let endPage = startPage + maxPagesToShow - 1;
+    
+    if (endPage > totalPages) {
+      endPage = totalPages;
+      startPage = Math.max(1, endPage - maxPagesToShow + 1);
+    }
+    
+    const pages = [];
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(i);
+    }
+    return pages;
+  }
+
+  mathMin(a: number, b: number): number {
+    return Math.min(a, b);
   }
 
   getSortIndicator(messageIndex: number, columnName: string): string {
