@@ -297,7 +297,7 @@
 
     <footer class="input-area">
       <div class="input-wrapper">
-        <input type="text" [(ngModel)]="userMessage" (keyup.enter)="sendMessage()" placeholder=""
+        <input type="text" [(ngModel)]="userMessage" (keyup.enter)="sendMessage()" placeholder="Enter your query..."
           [disabled]="isLoading">
         <button (click)="sendMessage()" [disabled]="isLoading || !userMessage.trim()">
           <svg viewBox="0 0 24 24" width="24" height="24">

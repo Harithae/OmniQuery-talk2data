@@ -71,7 +71,7 @@ export class AppComponent implements AfterViewChecked {
   userMessage = '';
   messages: Message[] = [
     {
-      text: 'Hello! How can I assist you with your data?',
+      text: 'Hello! How can I assist you?',
       sender: 'agent',
       timestamp: new Date()
     }
@@ -1197,7 +1197,7 @@ export class AppComponent implements AfterViewChecked {
     // Clear all messages except the initial greeting
     this.messages = [
       {
-        text: 'Hello! How can I assist you with your data?',
+        text: 'Hello! How can I assist you?',
         sender: 'agent',
         timestamp: new Date()
       }
