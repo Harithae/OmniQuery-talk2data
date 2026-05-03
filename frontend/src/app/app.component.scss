@@ -830,6 +830,61 @@ header {
         }
       }
     }
+
+    .pagination-controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 1.5rem;
+      background: white;
+      border-top: 1px solid #e5e7eb;
+
+      .pagination-info {
+        font-size: 0.85rem;
+        color: #4b5563;
+        font-weight: 500;
+      }
+
+      .pagination-buttons {
+        display: flex;
+        gap: 0.5rem;
+
+        .page-btn {
+          background: white;
+          border: 1px solid #d1d5db;
+          border-radius: 6px;
+          padding: 0.4rem 0.8rem;
+          font-size: 0.8rem;
+          font-weight: 500;
+          color: #374151;
+          cursor: pointer;
+          transition: all 0.2s;
+
+          &:hover:not(:disabled) {
+            background: #f3f4f6;
+            border-color: #9ca3af;
+          }
+
+          &:disabled {
+            background: #f9fafb;
+            color: #9ca3af;
+            cursor: not-allowed;
+            opacity: 0.7;
+          }
+
+          &.active {
+            background: #374151;
+            color: white;
+            border-color: #374151;
+          }
+
+          &.number-btn {
+            min-width: 32px;
+            padding: 0.4rem;
+          }
+        }
+      }
+    }
   }
 }
 

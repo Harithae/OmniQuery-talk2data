@@ -219,7 +219,7 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <tr *ngFor="let row of getSortedResults(i)">
+                  <tr *ngFor="let row of getPaginatedResults(i)">
                     <td *ngFor="let col of getColumns(msg.results); let colIndex = index"
                       [style.width]="getColumnWidth(i, colIndex)">
                       {{ row[getColumnKey(msg.results, col)] }}
@@ -227,6 +227,22 @@
                   </tr>
                 </tbody>
               </table>
+            </div>
+            
+            <!-- Pagination Controls -->
+            <div class="pagination-controls" *ngIf="msg.results.length > (msg.pageSize || 10)">
+              <div class="pagination-info">
+                Showing {{ ((msg.currentPage || 1) - 1) * (msg.pageSize || 10) + 1 }} to 
+                {{ mathMin((msg.currentPage || 1) * (msg.pageSize || 10), msg.results.length) }} of {{ msg.results.length }} entries
+              </div>
+              <div class="pagination-buttons">
+                <button (click)="prevPage(i)" [disabled]="(msg.currentPage || 1) === 1" class="page-btn">Previous</button>
+                <button *ngFor="let page of getPageNumbers(i)" 
+                        (click)="goToPage(i, page)" 
+                        [class.active]="page === (msg.currentPage || 1)"
+                        class="page-btn number-btn">{{ page }}</button>
+                <button (click)="nextPage(i)" [disabled]="(msg.currentPage || 1) === getTotalPages(i)" class="page-btn">Next</button>
+              </div>
             </div>
           </div>
 
