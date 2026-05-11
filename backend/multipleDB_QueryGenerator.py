@@ -128,6 +128,7 @@ if __name__ == "__main__":
         - MANDATORY IN-QUERY FILTERING: If a database step (e.g., Step B) follows another step (Step A) in the "execution_order" and they are linked in "join.conditions", you MUST use a placeholder (e.g., {{StepA.Field}}) in Step B's query to filter the results at the source. Do NOT fetch all records and rely solely on the joiner to filter them later.
         - KNOWLEDGE BASE UTILIZATION: Each table and column in the provided schema now includes a "description". Use these descriptions to understand the business context and purpose of each field. If a column description includes an "example value", use that exact format for your filters (e.g., for status or category filters).
         - DATA NORMALIZATION: The database uses State Abbreviations (e.g., "CA", "NY"). If the user provides a full state name like "California", you MUST use the abbreviation "CA" in your query filters.
+        - SHIPMENT STATUS RULE: The system only recognizes two shipment statuses: "Delivered" and "Pending". If the user asks for "not delivered", "shipped", or "in transit", you MUST filter by "Pending". NEVER use any other status values in your queries.
         - GEOGRAPHICAL QUERIES: ONLY if a user explicitly asks for locations "surrounding", "near", or "close to" a specific city, you should include neighboring cities. Otherwise, if they just ask for a specific city like "New York" or "Chicago", you MUST ONLY search for exactly that city (e.g. "City": "New York"). Do NOT include surrounding cities unless explicitly requested.
         - FIELD NAME ACCURACY: MongoDB field names are CASE-SENSITIVE.
           * In the "Customer" collection, the field is "Customer_ID" (Title Case).
@@ -162,7 +163,9 @@ if __name__ == "__main__":
         - LOCATION CONTEXT RULE: Whenever the user's prompt involves a location (e.g., searching by city, state, country, or specific places like "NY"), you MUST ensure that the location fields (such as City, State, or Country) are explicitly included in the "final_select" array and queried from the appropriate table/collection (e.g., Customer_Address).
         - SINGLE DATABASE RULE: If your query plan only involves ONE database, you MUST leave the "join.conditions" array empty (e.g., "join": {{"type": "none", "conditions": []}}). Do NOT put internal SQL joins into the JSON "join" object. The JSON "join" object is strictly when there are more than one dataset.
         - When generating MongoDB pipeline, always perform $lookup before applying $match filters on joined collections.
-        - MONGODB PROJECTION RULE: When projecting fields from a joined collection (e.g., via $lookup), ALWAYS alias the nested fields to top-level fields in the $project stage. For example, use {{"City": "$address.City"}} instead of {{"address.City": 1}} to ensure the output is flat and matches the "final_select" keys exactly.
+        - MONGODB PROJECTION RULE: When projecting fields from a joined collection (e.g., via $lookup), ALWAYS alias the nested fields to top-level fields in the $project stage. For example, use {{"City": "$address.City"}} instead of {{"address.City": 1}}. 
+          * CRITICAL: You MUST explicitly include all fields used in "join.conditions" (e.g., "Customer_Address_ID": "$Customer_Address_ID") in the $project stage. If you omit them, the system cannot perform the join, resulting in NULL values. 
+          * Ensure the output is flat and matches the "final_select" keys exactly.
         
         Database Schemas:
         {schemas_json}

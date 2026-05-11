@@ -203,7 +203,7 @@
                             "example_value": 1
                         },
                         "shipment_status": {
-                            "description": "The current status of the shipment, such as 'Delivered', 'In Transit', etc.",
+                            "description": "The current status of the shipment. Only 'Delivered' and 'Pending' statuses are recognized.",
                             "example_value": "Delivered"
                         },
                         "order_id": {

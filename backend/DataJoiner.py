@@ -119,11 +119,22 @@ def _join_two(
         if right_matches:
             for right_row in right_matches:
                 combined = {**left_row}
+                # Create a lowercase mapping for existing keys to handle case-insensitive collisions
+                lower_keys = {k.lower(): k for k in combined.keys()}
+                
                 for k, v in right_row.items():
-                    if k not in combined:
+                    k_lower = k.lower()
+                    if k_lower not in lower_keys:
                         combined[k] = v
+                        lower_keys[k_lower] = k
                     else:
-                        combined[f"{k}_right"] = v   # avoid collision
+                        # Collision check: if the key exists (case-insensitive)
+                        orig_k = lower_keys[k_lower]
+                        # If values are identical, we don't need a suffix
+                        if _coerce(combined[orig_k]) == _coerce(v):
+                            continue
+                        # Otherwise, add a suffix to avoid overwriting
+                        combined[f"{k}_right"] = v
                 merged.append(combined)
                 matched_right_keys.add(key)
         elif join_type in ("left", "full"):
