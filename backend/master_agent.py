@@ -25,17 +25,19 @@ def is_retail_domain(user_prompt: str) -> bool:
         client = get_llm_client(provider="groq", model="llama-3.1-8b-instant")
         
         system_prompt = (
-            "You are a domain validator. Determine if the user's query is related to RETAIL. "
+            "You are a strict domain classifier. Your ONLY job is to determine if the user query provided is related to RETAIL. "
             "Valid retail topics for this system include: Customers, Orders, Sales, Products, Stores, Inventory, "
             "Payments, Invoices, Shipments, Deliveries, Wish Lists, Browsing/View History, Product Features (color, size), and Product Categories (demographics). "
             "Note: Queries asking for geographical locations of customers or stores (e.g., 'nearby New York', 'in California') ARE valid retail queries. "
-            "Respond with 'YES' if it is related, and 'NO' otherwise. Return ONLY 'YES' or 'NO'."
+            "Respond with 'YES' if it is related, and 'NO' otherwise. Return ONLY the word 'YES' or 'NO'."
         )
+        
+        user_message = f"Evaluate the following query and tell me if it is related to retail:\n\n\"{user_prompt}\"\n\nIs this related to retail? Reply only with YES or NO."
         
         decision = client.chat_completion(
             messages=[
                 {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt}
+                {"role": "user", "content": user_message}
             ],
             temperature=0,
             max_tokens=5
