@@ -52,7 +52,7 @@ if __name__ == "__main__":
         print("Usage: python BusinessInsightsGenerator.py <user_prompt>")
         sys.exit(1)
         
-    user_prompt = sys.argv[1]
+    user_prompt = " ".join(sys.argv[1:])
     
     try:
         with open("Outputs/FinalResult.json", "r") as f:

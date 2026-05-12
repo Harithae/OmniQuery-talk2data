@@ -915,7 +915,12 @@ export class AppComponent implements AfterViewChecked {
 
   isVisibleColumn(columnName: string): boolean {
     const lower = columnName.toLowerCase();
+    
+    // Explicitly show email fields even if they end in _id
+    if (lower.includes('email')) return true;
+    
     // Hide columns ending in _id, id, or just being id (case-insensitive)
+    // but only if they are likely to be internal numeric IDs
     return !(lower.endsWith('_id') || lower.endsWith('id') || lower === '_id' || lower === 'id');
   }
 

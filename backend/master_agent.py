@@ -20,16 +20,20 @@ def is_retail_domain(user_prompt: str) -> bool:
     Checks if the user prompt is related to the retail domain.
     """
     try:
-        # Use a lightweight model for domain validation
         # Always use Groq for this check (fast and cheap)
         client = get_llm_client(provider="groq", model="llama-3.1-8b-instant")
         
         system_prompt = (
-            "You are a domain validator. Determine if the user's query is related to RETAIL. "
-            "Valid retail topics for this system include: Customers, Orders, Sales, Products, Stores, Inventory, "
-            "Payments, Invoices, Shipments, Deliveries, Wish Lists, Browsing/View History, Product Features (color, size), and Product Categories (demographics). "
-            "Note: Queries asking for geographical locations of customers or stores (e.g., 'nearby New York', 'in California') ARE valid retail queries. "
-            "Respond with 'YES' if it is related, and 'NO' otherwise. Return ONLY 'YES' or 'NO'."
+            "You are a domain validator for a Retail Management System. "
+            "Your job is to determine if a query is related to RETAIL BUSINESS. "
+            "Valid retail topics include: \n"
+            "- Customers (names, locations, emails, history)\n"
+            "- Orders & Sales (amounts, dates, statuses, invoices, payments)\n"
+            "- Products & Inventory (names, categories, prices, stock levels)\n"
+            "- Logistics (shipments, deliveries, stores, areas)\n\n"
+            "Queries about specific locations (e.g., 'in CA', 'near Chicago') are VALID if they relate to customers or stores. "
+            "Even if a query mentions specific categories like 'Category 9' or statuses like 'Pending', it is still RETAIL. "
+            "Respond with 'YES' if it is related, and 'NO' otherwise. Return ONLY the word 'YES' or 'NO'."
         )
         
         decision = client.chat_completion(
@@ -38,14 +42,14 @@ def is_retail_domain(user_prompt: str) -> bool:
                 {"role": "user", "content": user_prompt}
             ],
             temperature=0,
-            max_tokens=5
+            max_tokens=10
         )
         
+        logger.info(f"Domain validation decision for '{user_prompt[:50]}...': {decision}")
         return "YES" in decision.upper()
     except Exception as e:
         logger.error(f"Domain check error: {e}")
         return True  # Fallback to proceed if check fails
-        return True # Fallback to proceed if check fails
 
 async def run_master_agent(user_prompt: str) -> AsyncGenerator[dict, None]:
     """

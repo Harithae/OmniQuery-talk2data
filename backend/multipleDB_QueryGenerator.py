@@ -107,7 +107,7 @@ if __name__ == "__main__":
         - UI CLEANLINESS RULE: In the "final_select" array, it is perfectly fine to include internal ID fields (e.g., customer_id, product_id, _id) as they will be automatically hidden in the frontend table. However, you MUST ensure that descriptive, human-readable fields (e.g., Names, Emails, Product Names) are also included whenever possible.
         - Output ONLY a JSON object. No explanation, no conversational text.
         - SECURITY RULE: You must ONLY generate SELECT queries for SQL databases. Under no circumstances should you generate queries involving INSERT, UPDATE, DELETE, DROP, ALTER, CREATE, EXEC, EXECUTE, TRUNCATE, REPLACE, GRANT, or REVOKE operations. Similarly, for MongoDB, you must only generate read operations, not $out or $merge. If the user prompt implies or requests a data modification or schema extraction, you should refuse by returning exactly: {{"error": "I'm sorry, but I can't help with that. Modifying data or extracting schema is forbidden."}}.
-        - RELEVANCE RULE: If the query is completely unrelated to retail, sales, customers, inventory, or orders, return: {{"error": "This request appears to be outside my retail business domain."}}
+        - RELEVANCE RULE: If the query is completely unrelated to retail, sales, customers, inventory, or orders, return: {{"error": "This request appears to be outside my retail business domain."}}. However, be lenient: if it mentions customers, products, categories, or locations in a business context, it is likely relevant.
         - Use valid SQL syntax for SQL databases (Postgres_Sales_DB, SQL_Inventory_DB).
         - For MongoDB (Mongo_Customer_DB), output a stringified JSON object exactly in this format: '{{"collection": "collection_name", "pipeline": [...]}}'
         - IMPORTANT (MongoDB): When using a placeholder with the "$in" operator, you MUST wrap the placeholder as a STRING literal inside an array. Example: '{{"$match": {{"Field": {{"$in": ["{{OtherDB.Field}}"]}}}}}}'. NEVER convert the placeholder into a JSON object (e.g., do NOT do [{{"OtherDB": "Field"}}]). It MUST remain a string like `"{{OtherDB.Field}}"`.
@@ -117,9 +117,10 @@ if __name__ == "__main__":
         - IMPORTANT: The "name" field in the "databases" list MUST be exactly identical to the names listed in "execution_order" (including any _DB suffixes).
         - If a query depends on the results of another query, use a placeholder like {{DatabaseName.FieldName}} in the WHERE clause or Mongo filter.
         - Determine the correct "execution_order" array, specifying the sequence of databases to query so dependencies are resolved.
-        - MANDATORY JOIN KEYS: Every query in the "databases" list MUST explicitly SELECT/project the exact columns used in "join.conditions". For example, if you join on `SQL_Inventory_DB.Product_ID = Postgres_Sales_DB.product_id`, then SQL_Inventory_DB **MUST** select `Product_ID` and Postgres_Sales_DB **MUST** select `product_id`. Failure to select these keys makes the join impossible and is UNACCEPTABLE.
-        - COMPLETE JOIN GRAPH: You MUST include join conditions for EVERY database step that provides columns listed in "final_select". If a step is not linked in "join.conditions", its data will not be attached to the final results. Every table should be part of a single connected join path.
-        - PLACEHOLDER = JOIN: If you use a placeholder like {{StepA.Field}} in Step B's query to filter data, you ALMOST ALWAYS need a corresponding join condition: "StepA.Field = StepB.Field" to ensure the records from both databases are correctly paired in the final output.
+        - MANDATORY JOIN KEYS: Every query in the "databases" list MUST explicitly SELECT/project the exact columns used in "join.conditions". For example, if you join on `SQL_Inventory_DB.Product_ID = Postgres_Sales_DB.product_id`, then SQL_Inventory_DB **MUST** select `Product_ID` and Postgres_Sales_DB **MUST** select `product_id`. 
+          * CRITICAL: Even if a join key is not needed for the final display, it MUST be in the SELECT/projection list of its respective query. Failure to select these keys makes the join impossible and will result in an EMPTY final result. This is UNACCEPTABLE.
+        - COMPLETE JOIN GRAPH: You MUST include join conditions for EVERY database step that provides columns listed in "final_select". If a step is NOT providing any columns for the final output and is only used for filtering (via placeholders), do NOT include it in "join.conditions". Every table that contributes to the final output must be part of a connected join path.
+        - PLACEHOLDER = JOIN: If you use a placeholder like {{StepA.Field}} in Step B's query to filter data, you ONLY need a corresponding join condition "StepA.Field = StepB.Field" if you also need to include columns from StepA in your "final_select". If StepA is only used for filtering, OMIT the join condition to avoid unnecessary complexity and potential join failures.
         - CROSS-STEP KEY PRESERVATION: If you split a query into multiple steps, every step MUST explicitly SELECT the keys needed for the next join or the final output. If you need to show the Product Name, you must join the Product table to the Sales table using the product_id.
         - JOIN NAME ACCURACY: In the "join.conditions" array, you MUST use the EXACT names you defined in the "databases" list (e.g., use "Postgres_Sales_Step1", not "Postgres_Sales_DB").
         - AGGREGATION RULE: If your query involves a JOIN with another database AND uses an aggregate function (e.g., SUM, COUNT), you ABSOLUTELY MUST include the join key in the SELECT clause AND group by it. Example: "SELECT customer_address_id, COUNT(*) FROM ... GROUP BY customer_address_id". NEVER select only the aggregate function when joining!
@@ -137,6 +138,7 @@ if __name__ == "__main__":
         - CRITICAL: NO AMBIGUOUS COLUMNS: Whenever you use a JOIN, you MUST prefix EVERY SINGLE column name in the entire query (SELECT, WHERE, ORDER BY, etc.) with its table alias.
           * BAD:  `SELECT Product_ID, Product_Name FROM Product p JOIN Store_Products sp ...`
           * GOOD: `SELECT p.Product_ID, p.Product_Name, sp.Stock_Quantity FROM Product p JOIN Store_Products sp ...`
+        - NO CROSS-DATABASE PROJECTION: Do NOT attempt to include fields from one database (e.g., {{StepA.Field}}) in the SELECT or $project clause of another database (Step B). Placeholders MUST ONLY be used in the WHERE or $match clauses for filtering. The assembly of columns from different databases is handled exclusively by the 'DataJoiner' script using the 'final_select' and 'join.conditions' fields. Failure to follow this will result in malformed, invalid queries.
           * Failure to do this causes "Ambiguous Column Name" errors and is UNACCEPTABLE.
         - ALIAS RULE: If your SQL query involves a JOIN, you MUST use table aliases (e.g., `o`, `p`, `sp`) and you MUST prefix EVERY SINGLE column name in the SELECT, WHERE, GROUP BY, and ORDER BY clauses with its respective alias (e.g., `o.order_id`, `p.Product_Name`).
           * CASE SENSITIVITY: MongoDB collection names are CASE-SENSITIVE. Use "Customer" (Singular, Title Case), NOT "customers" or "customer".
@@ -213,7 +215,7 @@ if __name__ == "__main__":
     #user_prompt = "Display all the stored who have Product Category as 'Category 19'"
     import sys
     
-    user_prompt = sys.argv[1] if len(sys.argv) > 1 else "Get total order amount per customer for customers in Phoenix who bought the product Webcam HD"
+    user_prompt = " ".join(sys.argv[1:]) if len(sys.argv) > 1 else "Get total order amount per customer for customers in Phoenix who bought the product Webcam HD"
 
     print("Generating SQL ...")
     sql_query = sql_generator.generate_sql(system_prompt, user_prompt)
