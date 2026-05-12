@@ -36,10 +36,12 @@ def is_retail_domain(user_prompt: str) -> bool:
             "Respond with 'YES' if it is related, and 'NO' otherwise. Return ONLY the word 'YES' or 'NO'."
         )
         
+        user_message = f"Evaluate the following query and tell me if it is related to retail:\n\n\"{user_prompt}\"\n\nIs this related to retail? Reply only with YES or NO."
+         
         decision = client.chat_completion(
             messages=[
                 {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt}
+                {"role": "user", "content": user_message}
             ],
             temperature=0,
             max_tokens=10
